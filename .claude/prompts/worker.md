@@ -32,6 +32,22 @@ It prints one JSON object. Act on `action`:
 
 `repo` is `owner/name`; work in that repository's checkout.
 
+### Claim before doing anything else
+
+Several worker runs can start at the same moment (the hourly schedule and GitHub event triggers
+from both repositories). Right after the picker, for `start`, `resume`, `fix` and `triage`, claim
+the work:
+
+```bash
+bash /home/user/shop-api/scripts/claim.sh <repo> <issue, or pr for fix> <branch>
+```
+
+Use the branch from the picker's JSON; for `start` choose it now (`claude/issue-<N>-<short-slug>`)
+and use the same name in section 2; for `triage` use `claude/issue-<N>`. If it prints
+`{"claimed":false,...}` (exit 3), reply with its reason in one line and **end the run**: another
+worker was first. If it prints `{"action":"error",...}`, reply with the reason and end. The claim
+comment is your heartbeat: `heartbeat.sh` keeps editing it.
+
 ## 1. Rules for the whole run
 
 - Never force push, push to `main`, delete branches, change repository settings, or add or remove

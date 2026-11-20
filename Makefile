@@ -36,3 +36,4 @@ dev-mock: node_modules ## Dev server with MSW answering /api/* (no backend neede
 
 test-scripts: ## Tests for the orchestration scripts (needs jq)
 	bash scripts/tests/picker.test.sh
+	bash scripts/tests/claim.test.sh
