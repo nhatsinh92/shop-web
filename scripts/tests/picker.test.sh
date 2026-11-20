@@ -161,6 +161,24 @@ checks shop-api 5 build:success
 expect "unreadable pull request details -> error" '{"action":"error"}' "$(task)"
 
 reset
+pulls shop-api "$(pr 5 100 false "$(labels area:contract)")"
+checks shop-api 5 build:success merge-gate:failure
+mergeable shop-api 5 blocked
+expect "green PR never labelled review -> fix needs-review" '{"action":"fix","repo":"o/shop-api","pr":5,"branch":"claude/issue-5","why":"needs-review"}' "$(task)"
+
+reset
+pulls shop-api "$(pr 5 100 false "$(labels area:contract)")"
+checks shop-api 5 build:in_progress
+mergeable shop-api 5 blocked
+expect "PR without review label but checks still running -> none" '{"action":"none"}' "$(task)"
+
+reset
+pulls shop-api "$(pr 5 100 false "$(labels agent-approved)")"
+checks shop-api 5 build:success merge-gate:success
+mergeable shop-api 5 blocked
+expect "approved PR waiting for the owner is left alone" '{"action":"none"}' "$(task)"
+
+reset
 pulls shop-api "$(pr 6 100 true "$(labels changes-requested)")"
 expect "draft PRs are ignored" '{"action":"none"}' "$(task)"
 

@@ -6,7 +6,8 @@
 #   {"action":"triage","repo":"o/r","issue":N}             an issue reached MAX_ATTEMPTS attempts
 #   {"action":"resume","repo":"o/r","issue":N,"branch":"..."}  in-progress issue, stale heartbeat
 #   {"action":"fix","repo":"o/r","pr":N,"branch":"...","why":"..."}   task PR (claude/issue-*) that
-#        needs the worker; why = changes-requested | conflict (merge conflict with main) | checks
+#        needs the worker; why = changes-requested | conflict (merge conflict with main) | checks |
+#        needs-review (green checks, but the PR was never labelled review)
 #   {"action":"start","repo":"o/r","issue":N}              oldest ready issue: deps closed, epic approved
 #   {"action":"error","reason":"..."}  (exit 1)            GitHub could not be read: do not guess
 #
@@ -90,6 +91,11 @@ for row in "${pulls[@]}"; do
   fi
   checks=$(check_state "$repo" "$sha") || die_api "checks of $repo#$number"
   if [[ $checks == fail ]]; then json action fix repo "$repo" pr "$number" branch "$ref" why checks; exit 0; fi
+  # Green checks but never handed to the reviewer (a run stopped before adding `review`).
+  if [[ $checks == green ]] && ! has "$labels" review && ! has "$labels" agent-approved; then
+    json action fix repo "$repo" pr "$number" branch "$ref" why needs-review
+    exit 0
+  fi
 done
 
 # 4. Ready issues, oldest first across repos: triage if exhausted, else start when dependencies are
