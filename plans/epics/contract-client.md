@@ -27,15 +27,15 @@ Out of scope: any page or feature UI (Phases 2–5), `proxy.ts` (Phase 2), login
 
 ## Decisions
 
-| Topic            | Decision                                                                                                                                                                                                                       |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Package source   | `pnpm add <release tarball URL>` pinned to an exact version; Renovate-style bumps are manual tasks.                                                                                                                            |
-| Type generation  | `openapi-typescript` from the bundled specs into `src/lib/api/generated/` (committed). `pnpm gen:api` regenerates; CI runs it and fails on a diff.                                                                             |
-| Client           | `openapi-fetch` wrapped in `src/lib/api/client.ts`: `credentials: 'include'`, Problem parsing into `ApiError { status, code, detail }`, single-flight refresh via `POST /api/auth/refresh`, one retry.                         |
-| Server fetch     | `src/lib/api/server.ts`: same types, base URL from `CORE_INTERNAL_URL` / `CART_INTERNAL_URL`, `AbortSignal.timeout(budget)`, never inside `'use cache'` with user data.                                                        |
-| Mocks            | `openapi-msw` typed handlers in `mocks/`, so a handler that does not match the contract fails type-checking. (Compatibility with MSW 3 is checked in the first task; fallback: hand-typed handlers using the generated types.) |
-| Error messages   | `src/lib/api/error-messages.ts` maps each `code` to Vietnamese copy; unknown codes fall back to a generic message.                                                                                                             |
-| Breaking changes | A breaking contract change surfaces as TypeScript errors in `make lint` (tsc) and therefore fails CI.                                                                                                                          |
+| Topic            | Decision                                                                                                                                                                                                               |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Package source   | `pnpm add <release tarball URL>` pinned to an exact version; Renovate-style bumps are manual tasks.                                                                                                                    |
+| Type generation  | `openapi-typescript` from the bundled specs into `src/lib/api/generated/` (committed). `pnpm gen:api` regenerates; CI runs it and fails on a diff.                                                                     |
+| Client           | `openapi-fetch` wrapped in `src/lib/api/client.ts`: `credentials: 'include'`, Problem parsing into `ApiError { status, code, detail }`, single-flight refresh via `POST /api/auth/refresh`, one retry.                 |
+| Server fetch     | `src/lib/api/server.ts`: same types, base URL from `CORE_INTERNAL_URL` / `CART_INTERNAL_URL`, `AbortSignal.timeout(budget)`, never inside `'use cache'` with user data.                                                |
+| Mocks            | `openapi-msw` typed handlers in `mocks/`, so a handler that does not match the contract fails type-checking. (Compatibility with MSW 3 is checked in task 5; fallback: hand-typed handlers using the generated types.) |
+| Error messages   | `src/lib/api/error-messages.ts` maps each `code` to Vietnamese copy; unknown codes fall back to a generic message.                                                                                                     |
+| Breaking changes | A breaking contract change surfaces as TypeScript errors in `make lint` (tsc) and therefore fails CI.                                                                                                                  |
 
 ## Expected tasks (the planner details them after approval)
 
