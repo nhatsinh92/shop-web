@@ -32,8 +32,8 @@ QUERY='query($owner: String!, $name: String!) {
               comments(last: 50) { nodes { body updatedAt } }
               commits(last: 1) { nodes { commit { statusCheckRollup { contexts(first: 50) { nodes {
                 __typename
-                ... on CheckRun { name status conclusion }
-                ... on StatusContext { context state } } } } } } } }
+                ... on CheckRun { name status conclusion startedAt }
+                ... on StatusContext { context state createdAt } } } } } } } }
     }
   }
 }'
@@ -42,13 +42,17 @@ QUERY='query($owner: String!, $name: String!) {
 JQ='
 def hb: [.comments.nodes[] | select(.body | test("<!-- shop-agent:heartbeat role=reviewer"))] | last;
 def hbage: hb as $h | if $h then ((now - ($h.updatedAt | fromdateiso8601)) / 60 | floor) else -1 end;
+# Latest run per check name (re-runs and cancelled runs from label events are superseded).
 def checks: [.commits.nodes[0].commit.statusCheckRollup.contexts.nodes[]?
   | if .__typename == "CheckRun"
-    then {n: .name, s: (if .status != "COMPLETED" then "pending"
-                        elif (.conclusion | IN("SUCCESS", "SKIPPED", "NEUTRAL")) then "ok" else "fail" end)}
-    else {n: .context, s: (if .state == "SUCCESS" then "ok"
-                           elif (.state | IN("PENDING", "EXPECTED")) then "pending" else "fail" end)} end
-  | select(.n != "merge-gate")];
+    then {n: .name, t: (.startedAt // ""),
+          s: (if .status != "COMPLETED" or .conclusion == "CANCELLED" then "pending"
+              elif (.conclusion | IN("SUCCESS", "SKIPPED", "NEUTRAL")) then "ok" else "fail" end)}
+    else {n: .context, t: (.createdAt // ""),
+          s: (if .state == "SUCCESS" then "ok"
+              elif (.state | IN("PENDING", "EXPECTED")) then "pending" else "fail" end)} end
+  | select(.n != "merge-gate")]
+  | group_by(.n) | map(max_by(.t));
 def checkstate: checks as $c
   | if ($c | length) == 0 then "none" elif any($c[]; .s == "fail") then "fail"
     elif any($c[]; .s == "pending") then "pending" else "green" end;

@@ -5,7 +5,7 @@
 #   {"action":"none","reason":"..."}                      another worker is active, or nothing to do
 #   {"action":"triage","repo":"o/r","issue":N}            an issue reached MAX_ATTEMPTS attempts
 #   {"action":"resume","repo":"o/r","issue":N,"branch":"..."}  in-progress issue with a stale heartbeat
-#   {"action":"fix","repo":"o/r","pr":N,"branch":"..."}   PR with requested changes or failing checks
+#   {"action":"fix","repo":"o/r","pr":N,"branch":"..."}   task PR (issue-*) with requested changes or failing checks
 #   {"action":"start","repo":"o/r","issue":N}             oldest ready issue: deps closed, epic approved
 #
 # It looks across all repositories in SHOP_REPOS so only one worker is active at a time.
@@ -53,8 +53,8 @@ QUERY='query($owner: String!, $name: String!) {
               comments(last: 50) { nodes { body updatedAt } }
               commits(last: 1) { nodes { commit { statusCheckRollup { contexts(first: 50) { nodes {
                 __typename
-                ... on CheckRun { name status conclusion }
-                ... on StatusContext { context state } } } } } } } }
+                ... on CheckRun { name status conclusion startedAt }
+                ... on StatusContext { context state createdAt } } } } } } } }
     }
   }
 }'
@@ -71,13 +71,17 @@ def attempts: [.comments.nodes[] | select(.body | test("<!-- shop-agent:attempt"
 def refs($prefix): (.body // "") | split("\n")
   | map(select(test("^\\s*\\**" + $prefix + "\\**:"; "i"))) | (first // "")
   | [scan("(?:[A-Za-z0-9_.-]+/)?([A-Za-z0-9_.-]+)?#([0-9]+)")] | map((.[0] // "") + "#" + .[1]) | join(",");
+# Latest run per check name (re-runs and cancelled runs from label events are superseded).
 def checks: [.commits.nodes[0].commit.statusCheckRollup.contexts.nodes[]?
   | if .__typename == "CheckRun"
-    then {n: .name, s: (if .status != "COMPLETED" then "pending"
-                        elif (.conclusion | IN("SUCCESS", "SKIPPED", "NEUTRAL")) then "ok" else "fail" end)}
-    else {n: .context, s: (if .state == "SUCCESS" then "ok"
-                           elif (.state | IN("PENDING", "EXPECTED")) then "pending" else "fail" end)} end
-  | select(.n != "merge-gate")];
+    then {n: .name, t: (.startedAt // ""),
+          s: (if .status != "COMPLETED" or .conclusion == "CANCELLED" then "pending"
+              elif (.conclusion | IN("SUCCESS", "SKIPPED", "NEUTRAL")) then "ok" else "fail" end)}
+    else {n: .context, t: (.createdAt // ""),
+          s: (if .state == "SUCCESS" then "ok"
+              elif (.state | IN("PENDING", "EXPECTED")) then "pending" else "fail" end)} end
+  | select(.n != "merge-gate")]
+  | group_by(.n) | map(max_by(.t));
 def checkstate: checks as $c
   | if ($c | length) == 0 then "none" elif any($c[]; .s == "fail") then "fail"
     elif any($c[]; .s == "pending") then "pending" else "green" end;
@@ -134,9 +138,10 @@ for row in "${rows[@]}"; do
 done
 
 # 3. PRs that need the worker: requested changes, or failing checks (merge-gate excluded).
+#    Only task PRs (branch issue-*); bootstrap and planning PRs belong to the owner and planner.
 for row in "${rows[@]}"; do
   IFS=$US read -r repo kind number _ labels _ branch checks draft <<<"$row"
-  [[ $kind == pr && $draft == false ]] && ! has "$labels" blocked || continue
+  [[ $kind == pr && $draft == false && $branch == issue-* ]] && ! has "$labels" blocked || continue
   if has "$labels" changes-requested || [[ $checks == fail ]]; then
     json action fix repo "$repo" pr "$number" branch "$branch"
     exit 0
