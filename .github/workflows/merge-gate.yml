@@ -13,9 +13,9 @@ permissions:
   issues: read
   pull-requests: write # only to reset approval labels when new commits are pushed
 
-concurrency:
-  group: merge-gate-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
+# No concurrency group on purpose: GitHub counts cancelled runs of a required check, so cancelling
+# superseded runs blocked merging even after a newer run passed. Every run reads the current labels
+# through the API, so the last run to finish reflects the latest state.
 
 env:
   GH_TOKEN: ${{ github.token }}
