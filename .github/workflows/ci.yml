@@ -45,9 +45,9 @@ jobs:
           persist-credentials: false
       - name: ShellCheck
         run: >-
-          docker run --rm -v "$PWD:/mnt" -w /mnt koalaman/shellcheck:v0.11.0 -S warning
-          scripts/*.sh scripts/tests/*.sh .claude/hooks/guard.sh .github/scripts/pr-policy.sh
-      - name: Picker and guard tests
+          docker run --rm -v "$PWD:/mnt" -w /mnt koalaman/shellcheck:v0.11.0 -x -S warning
+          scripts/*.sh scripts/lib/*.sh scripts/tests/*.sh .github/scripts/pr-policy.sh
+      - name: Picker tests
         run: make test-scripts
 
   gitleaks:

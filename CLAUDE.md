@@ -33,11 +33,15 @@ Vietnamese, taken from the design files.
 | `make build`        | Production build (`next build`)                                                                 |
 | `make demo`         | Production build + `next start` on :3000; `/api/*` is rewritten to the gateway on :8080         |
 | `make e2e`          | Playwright smoke + axe against the production build, desktop (1280) and phone (390)             |
-| `make test-scripts` | Tests for the picker scripts and the agent guard hook (needs jq)                                |
+| `make test-scripts` | Fixture tests for the picker scripts (needs jq)                                                 |
 | `make dev-mock`     | Dev server with MSW answering `/api/*` (no backend needed)                                      |
 | `pnpm format`       | Prettier write (also sorts Tailwind classes)                                                    |
 
 Run `make lint test` before every push, and `make e2e` when you touch pages or layout.
+
+GitHub access in Claude Code cloud sessions is **REST only** (GraphQL, and therefore `gh pr` /
+`gh issue`, is blocked by the session proxy). Use `scripts/gh-task.sh` for issues, labels,
+comments, PRs, checks (`checks-wait`, `failed-logs`) and auto-merge, or `gh api repos/...`.
 
 ## Folder conventions (copy the reference feature)
 
@@ -120,5 +124,6 @@ when you cannot continue at all.
 
 ## Conventions
 
-- Branch `issue-<number>-<short-slug>`; one issue per PR; PR body has `Closes #<n>`.
+- Branch `claude/issue-<number>-<short-slug>` (cloud sessions may push only `claude/` branches);
+  one issue per PR; PR body has `Closes #<n>`.
 - Conventional Commits, small steps, pushed after each step.

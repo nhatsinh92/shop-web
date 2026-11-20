@@ -1,96 +1,51 @@
 #!/usr/bin/env bash
-# Picks the next PR for a reviewer session. Deterministic: bash + gh, no model calls.
+# Picks the next PR for a reviewer session. Deterministic: bash + gh REST, no model calls.
 # Prints exactly one JSON object and exits within seconds:
 #
 #   {"action":"review","repo":"o/r","pr":N,"issue":M}   oldest PR labelled `review` with green checks
 #   {"action":"none","reason":"..."}
+#   {"action":"error","reason":"..."}  (exit 1)         GitHub could not be read
 #
-# Skips drafts, PRs already labelled agent-approved / changes-requested / blocked, PRs whose checks
+# Skips drafts, PRs labelled agent-approved / changes-requested / blocked, PRs whose checks
 # (merge-gate excluded) are pending or failing, and PRs with a reviewer heartbeat younger than
-# HEARTBEAT_STALE_MINUTES (another reviewer is on it):
-#   <!-- shop-agent:heartbeat role=reviewer -->
+# HEARTBEAT_STALE_MINUTES (another reviewer is on it):  <!-- shop-agent:heartbeat role=reviewer -->
 set -euo pipefail
 
-# Field separator for rows: a non-whitespace character, so empty fields are kept by `read`.
-US=$'\x1f'
+here=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+# shellcheck source=lib/gh-rest.sh
+source "$here/lib/gh-rest.sh"
+load_repos
 
-STALE_MINUTES=${HEARTBEAT_STALE_MINUTES:-20}
+PULLS_JQ='.[] | [.created_at, .number, ([.labels[].name] | join(",")), .draft, .head.sha,
+  (((.body // "") | [scan("(?i)(?:closes|fixes|resolves) #([0-9]+)")] | first // [""]) | .[0])]
+  | map(tostring) | join("\u001f")'
 
-default_repos() {
-  local url owner
-  url=$(git config --get remote.origin.url 2>/dev/null || true)
-  owner=$(sed -E 's#.*github\.com[:/]([^/]+)/.*#\1#' <<<"$url")
-  [[ -n $owner && $owner != "$url" ]] || owner=nhatsinh92
-  echo "$owner/shop-api $owner/shop-web"
-}
-read -r -a REPOS <<<"${SHOP_REPOS:-$(default_repos)}"
-
-QUERY='query($owner: String!, $name: String!) {
-  repository(owner: $owner, name: $name) {
-    pullRequests(states: OPEN, first: 50, orderBy: {field: CREATED_AT, direction: ASC}) {
-      nodes { number createdAt isDraft body labels(first: 30) { nodes { name } }
-              comments(last: 50) { nodes { body updatedAt } }
-              commits(last: 1) { nodes { commit { statusCheckRollup { contexts(first: 50) { nodes {
-                __typename
-                ... on CheckRun { name status conclusion startedAt }
-                ... on StatusContext { context state createdAt } } } } } } } }
-    }
-  }
-}'
-
-# Row (fields separated by US): <createdAt> <number> <labels> <draft> <checks> <reviewer hb age|-1> <closes issue>
-JQ='
-def hb: [.comments.nodes[] | select(.body | test("<!-- shop-agent:heartbeat role=reviewer"))] | last;
-def hbage: hb as $h | if $h then ((now - ($h.updatedAt | fromdateiso8601)) / 60 | floor) else -1 end;
-# Latest run per check name (re-runs and cancelled runs from label events are superseded).
-def checks: [.commits.nodes[0].commit.statusCheckRollup.contexts.nodes[]?
-  | if .__typename == "CheckRun"
-    then {n: .name, t: (.startedAt // ""),
-          s: (if .status != "COMPLETED" or .conclusion == "CANCELLED" then "pending"
-              elif (.conclusion | IN("SUCCESS", "SKIPPED", "NEUTRAL")) then "ok" else "fail" end)}
-    else {n: .context, t: (.createdAt // ""),
-          s: (if .state == "SUCCESS" then "ok"
-              elif (.state | IN("PENDING", "EXPECTED")) then "pending" else "fail" end)} end
-  | select(.n != "merge-gate")]
-  | group_by(.n) | map(max_by(.t));
-def checkstate: checks as $c
-  | if ($c | length) == 0 then "none" elif any($c[]; .s == "fail") then "fail"
-    elif any($c[]; .s == "pending") then "pending" else "green" end;
-def closes: ((.body // "") | [scan("(?i)(?:closes|fixes|resolves) #([0-9]+)")] | first // [""]) | .[0];
-.data.repository.pullRequests.nodes[]
-  | [.createdAt, .number, ([.labels.nodes[].name] | join(",")), .isDraft, checkstate, hbage, closes] | map(tostring) | join("\u001f")
-'
-
-has() { [[ ",$1," == *",$2,"* ]]; }
-
-# Test hook: with SHOP_FIXTURES=<dir>, read <dir>/<repo name>.json through jq instead of GitHub.
-query_repo() {
-  if [[ -n ${SHOP_FIXTURES:-} ]]; then jq -r "$JQ" "$SHOP_FIXTURES/${1##*/}.json"; else
-    gh api graphql -F owner="${1%%/*}" -F name="${1##*/}" -f query="$QUERY" --jq "$JQ"
-  fi
-}
-
+since=$(minutes_ago "$STALE_MINUTES")
 candidates=()
+busy=" "
 for repo in "${REPOS[@]}"; do
-  while IFS= read -r line; do
-    [[ -n $line ]] && candidates+=("$line$US$repo")
-  done < <(query_repo "$repo" | tr -d '\015')
+  out=$(api "repos/$repo/issues/comments?since=$since&per_page=100" "$(fresh_heartbeats_jq reviewer)") ||
+    die_api "recent comments of $repo"
+  while IFS=$US read -r number _; do [[ -n $number ]] && busy+="$repo#$number "; done <<<"$out"
+  out=$(api "repos/$repo/pulls?state=open&per_page=100" "$PULLS_JQ") || die_api "open pull requests of $repo"
+  while IFS= read -r line; do [[ -n $line ]] && candidates+=("$line$US$repo"); done <<<"$out"
 done
 
 mapfile -t sorted < <(printf '%s\n' "${candidates[@]}" | sort)
 for row in "${sorted[@]}"; do
-  [[ -z $row ]] && continue
-  IFS=$US read -r _ number labels draft checks age issue repo <<<"$row"
+  [[ -n $row ]] || continue
+  IFS=$US read -r _ number labels draft sha issue repo <<<"$row"
   [[ $draft == false ]] && has "$labels" review || continue
-  has "$labels" agent-approved || has "$labels" changes-requested || has "$labels" blocked && continue
+  if has "$labels" agent-approved || has "$labels" changes-requested || has "$labels" blocked; then continue; fi
+  [[ $busy == *" $repo#$number "* ]] && continue
+  checks=$(check_state "$repo" "$sha") || die_api "checks of $repo#$number"
   [[ $checks == green ]] || continue
-  ((age >= 0 && age < STALE_MINUTES)) && continue
   if [[ -n $issue ]]; then
-    printf '{"action":"review","repo":"%s","pr":%s,"issue":%s}\n' "$repo" "$number" "$issue"
+    json action review repo "$repo" pr "$number" issue "$issue"
   else
-    printf '{"action":"review","repo":"%s","pr":%s}\n' "$repo" "$number"
+    json action review repo "$repo" pr "$number"
   fi
   exit 0
 done
 
-echo '{"action":"none","reason":"no PR labelled review with green checks"}'
+json action none reason "no PR labelled review with green checks"
