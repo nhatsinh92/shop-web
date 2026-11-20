@@ -44,6 +44,7 @@ issues() { put "repos/o/$1/issues" "[$2]"; }
 pulls() { put "repos/o/$1/pulls" "[$2]"; }
 recent() { put "repos/o/$1/issues/comments" "[$2]"; }
 item_comments() { put "repos/o/$1/issues/$2/comments" "[${3:-}]"; }
+mergeable() { put "repos/o/$1/pulls/$2" "{\"number\":$2,\"mergeable_state\":\"$3\"}"; } # repo-name pr state
 rest_issue() { # repo-name number state labels...
   local name=$1 number=$2 state=$3
   shift 3
@@ -122,27 +123,42 @@ expect "blocked issue is ignored" '{"action":"none"}' "$(task)"
 
 reset
 pulls shop-web "$(pr 4 100 false "$(labels review changes-requested)")"
-expect "PR with requested changes -> fix" '{"action":"fix","repo":"o/shop-web","pr":4,"branch":"claude/issue-4"}' "$(task)"
+expect "PR with requested changes -> fix" '{"action":"fix","repo":"o/shop-web","pr":4,"branch":"claude/issue-4","why":"changes-requested"}' "$(task)"
 
 reset
 pulls shop-api "$(pr 5 100 false "$(labels review)")"
 checks shop-api 5 build:failure merge-gate:failure
-expect "PR with a failing check -> fix" '{"action":"fix","repo":"o/shop-api","pr":5,"branch":"claude/issue-5"}' "$(task)"
+mergeable shop-api 5 unstable
+expect "PR with a failing check -> fix" '{"action":"fix","repo":"o/shop-api","pr":5,"branch":"claude/issue-5","why":"checks"}' "$(task)"
 
 reset
 pulls shop-api "$(pr 5 100 false "$(labels review)")"
 checks shop-api 5 build:success merge-gate:failure
+mergeable shop-api 5 blocked
 expect "only merge-gate failing is not a fix" '{"action":"none"}' "$(task)"
 
 reset
 pulls shop-api "$(pr 5 100 false "$(labels review)")"
 checks shop-api 5 build:cancelled merge-gate:cancelled build:success merge-gate:failure
+mergeable shop-api 5 blocked
 expect "a cancelled run superseded by a green re-run is not a fix" '{"action":"none"}' "$(task)"
 
 reset
 pulls shop-api "$(pr 5 100 false "$(labels review)")"
 checks shop-api 5 build:success build:failure
-expect "the latest run of a check decides" '{"action":"fix","repo":"o/shop-api","pr":5,"branch":"claude/issue-5"}' "$(task)"
+mergeable shop-api 5 unstable
+expect "the latest run of a check decides" '{"action":"fix","repo":"o/shop-api","pr":5,"branch":"claude/issue-5","why":"checks"}' "$(task)"
+
+reset
+pulls shop-api "$(pr 5 100 false "$(labels review)")"
+checks shop-api 5 build:success merge-gate:failure
+mergeable shop-api 5 dirty
+expect "PR with a merge conflict and green checks -> fix" '{"action":"fix","repo":"o/shop-api","pr":5,"branch":"claude/issue-5","why":"conflict"}' "$(task)"
+
+reset
+pulls shop-api "$(pr 5 100 false "$(labels review)")"
+checks shop-api 5 build:success
+expect "unreadable pull request details -> error" '{"action":"error"}' "$(task)"
 
 reset
 pulls shop-api "$(pr 6 100 true "$(labels changes-requested)")"
