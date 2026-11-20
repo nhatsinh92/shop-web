@@ -18,18 +18,19 @@ attempt() { comment "<!-- shop-agent:attempt -->" "$(ago 90)"; }
 issue() { # number created-min-ago body labels-json comments-json
   printf '{"number":%s,"createdAt":"%s","body":"%s","labels":%s,"comments":%s}' "$1" "$(ago "$2")" "$3" "$4" "$5"
 }
-checks() { # name:STATE ... (SUCCESS, FAILURE, IN_PROGRESS)
-  local out="" pair name state
+checks() { # name:STATE ... (SUCCESS, FAILURE, CANCELLED, IN_PROGRESS); later arguments started later
+  local out="" pair name state i=$#
   for pair in "$@"; do
     name=${pair%%:*} state=${pair#*:}
-    if [[ $state == IN_PROGRESS ]]; then out+="${out:+,}{\"__typename\":\"CheckRun\",\"name\":\"$name\",\"status\":\"IN_PROGRESS\",\"conclusion\":null}"
-    else out+="${out:+,}{\"__typename\":\"CheckRun\",\"name\":\"$name\",\"status\":\"COMPLETED\",\"conclusion\":\"$state\"}"; fi
+    i=$((i - 1))
+    if [[ $state == IN_PROGRESS ]]; then out+="${out:+,}{\"__typename\":\"CheckRun\",\"name\":\"$name\",\"status\":\"IN_PROGRESS\",\"conclusion\":null,\"startedAt\":\"$(ago "$i")\"}"
+    else out+="${out:+,}{\"__typename\":\"CheckRun\",\"name\":\"$name\",\"status\":\"COMPLETED\",\"conclusion\":\"$state\",\"startedAt\":\"$(ago "$i")\"}"; fi
   done
   echo "{\"nodes\":[{\"commit\":{\"statusCheckRollup\":{\"contexts\":{\"nodes\":[$out]}}}}]}"
 }
-pr() { # number created-min-ago draft labels-json comments-json checks-json [body]
-  printf '{"number":%s,"createdAt":"%s","isDraft":%s,"headRefName":"issue-%s","body":"%s","labels":%s,"comments":%s,"commits":%s}' \
-    "$1" "$(ago "$2")" "$3" "$1" "${7:-}" "$4" "$5" "$6"
+pr() { # number created-min-ago draft labels-json comments-json checks-json [body] [branch]
+  printf '{"number":%s,"createdAt":"%s","isDraft":%s,"headRefName":"%s","body":"%s","labels":%s,"comments":%s,"commits":%s}' \
+    "$1" "$(ago "$2")" "$3" "${8:-issue-$1}" "${7:-}" "$4" "$5" "$6"
 }
 repo_json() { # file issues-json-array prs-json-array
   printf '{"data":{"repository":{"issues":{"nodes":[%s]},"pullRequests":{"nodes":[%s]}}}}' "$2" "$3" >"$work/$1.json"
@@ -92,6 +93,18 @@ repo_json shop-api "" "$(pr 6 100 true "$(labels)" "$(comments)" "$(checks build
 expect "draft PRs are ignored" '{"action":"none"}' "$(task)"
 
 reset
+repo_json shop-api "" "$(pr 5 100 false "$(labels review)" "$(comments)" "$(checks build:CANCELLED merge-gate:CANCELLED build:SUCCESS merge-gate:FAILURE)")"
+expect "a cancelled run superseded by a green re-run is not a fix" '{"action":"none"}' "$(task)"
+
+reset
+repo_json shop-api "" "$(pr 5 100 false "$(labels review)" "$(comments)" "$(checks build:SUCCESS build:FAILURE)")"
+expect "the latest run of a check decides" '{"action":"fix","repo":"o/shop-api","pr":5,"branch":"issue-5"}' "$(task)"
+
+reset
+repo_json shop-api "" "$(pr 3 100 false "$(labels phase:1)" "$(comments)" "$(checks build:FAILURE)" "" plans/phase-1)"
+expect "planning and bootstrap PRs are not fixed by workers" '{"action":"none"}' "$(task)"
+
+reset
 repo_json shop-api "$(issue 10 300 'Depends on: #9 (contract)\nEpic: #2' "$(labels ready)" "$(comments)"),$(issue 11 200 'Depends on: shop-web#1\nEpic: #2' "$(labels ready)" "$(comments)")" ""
 rest_issue shop-api 9 open
 rest_issue shop-web 1 closed
@@ -130,6 +143,10 @@ expect "review: oldest green PR, merge-gate ignored" '{"action":"review","repo":
 reset
 repo_json shop-api "" "$(pr 5 300 false "$(labels review)" "$(comments)" "$(checks build:IN_PROGRESS)"),$(pr 6 100 false "$(labels review agent-approved)" "$(comments)" "$(checks build:SUCCESS)")"
 expect "review: pending checks and approved PRs are skipped" '{"action":"none"}' "$(review)"
+
+reset
+repo_json shop-api "" "$(pr 5 300 false "$(labels review)" "$(comments)" "$(checks build:CANCELLED build:SUCCESS)")"
+expect "review: a cancelled run superseded by a green re-run counts as green" '{"action":"review","repo":"o/shop-api","pr":5}' "$(review)"
 
 reset
 repo_json shop-web "" "$(pr 8 300 false "$(labels review)" "$(comments "$(heartbeat x 3 reviewer)")" "$(checks build:SUCCESS)")"
