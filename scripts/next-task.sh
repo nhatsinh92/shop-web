@@ -5,8 +5,8 @@
 #   {"action":"none","reason":"..."}                       another worker is active, or nothing to do
 #   {"action":"triage","repo":"o/r","issue":N}             an issue reached MAX_ATTEMPTS attempts
 #   {"action":"resume","repo":"o/r","issue":N,"branch":"..."}  in-progress issue, stale heartbeat
-#   {"action":"fix","repo":"o/r","pr":N,"branch":"..."}    task PR (claude/issue-*) with requested
-#                                                          changes or failing checks
+#   {"action":"fix","repo":"o/r","pr":N,"branch":"...","why":"..."}   task PR (claude/issue-*) that
+#        needs the worker; why = changes-requested | conflict (merge conflict with main) | checks
 #   {"action":"start","repo":"o/r","issue":N}              oldest ready issue: deps closed, epic approved
 #   {"action":"error","reason":"..."}  (exit 1)            GitHub could not be read: do not guess
 #
@@ -72,14 +72,24 @@ for row in "${issues[@]}"; do
   exit 0
 done
 
-# 3. Task PRs that need the worker: requested changes, or failing checks (merge-gate excluded).
+# 3. Task PRs that need the worker: requested changes, a merge conflict with main, or failing checks
+#    (merge-gate excluded).
 #    Bootstrap and planning PRs belong to the owner and the planner.
 for row in "${pulls[@]}"; do
   IFS=$US read -r repo number _ labels ref sha draft <<<"$row"
   [[ $draft == false && $ref == claude/issue-* ]] && ! has "$labels" blocked || continue
-  if has "$labels" changes-requested; then json action fix repo "$repo" pr "$number" branch "$ref"; exit 0; fi
+  if has "$labels" changes-requested; then
+    json action fix repo "$repo" pr "$number" branch "$ref" why changes-requested
+    exit 0
+  fi
+  # A PR in conflict with main can still have green checks and would wait forever.
+  merge_state=$(api "repos/$repo/pulls/$number" '.mergeable_state') || die_api "pull request $repo#$number"
+  if [[ $merge_state == dirty ]]; then
+    json action fix repo "$repo" pr "$number" branch "$ref" why conflict
+    exit 0
+  fi
   checks=$(check_state "$repo" "$sha") || die_api "checks of $repo#$number"
-  if [[ $checks == fail ]]; then json action fix repo "$repo" pr "$number" branch "$ref"; exit 0; fi
+  if [[ $checks == fail ]]; then json action fix repo "$repo" pr "$number" branch "$ref" why checks; exit 0; fi
 done
 
 # 4. Ready issues, oldest first across repos: triage if exhausted, else start when dependencies are

@@ -27,7 +27,7 @@ It prints one JSON object. Act on `action`:
 | `error`  | GitHub could not be read. Reply with the reason and end. Do not guess what to work on. |
 | `start`  | Sections 2, 3 and 4.                                                                   |
 | `resume` | Section 2 (resume), then 3 and 4.                                                      |
-| `fix`    | Section 5.                                                                             |
+| `fix`    | Section 5 (`why`: `changes-requested`, `conflict` or `checks`).                        |
 | `triage` | Follow `.claude/prompts/triage.md` and end.                                            |
 
 `repo` is `owner/name`; work in that repository's checkout.
@@ -126,8 +126,25 @@ git fetch origin && git switch $B
 bash /home/user/shop-api/scripts/heartbeat.sh $R $P worker $B - <<<"Fixing review / CI feedback"
 ```
 
-Address each requested change and each failing check, commit, push (approvals reset automatically
-on new commits), then reply on the PR listing what changed per item (`$T comment $R $P -`), and:
+What to do depends on `why`:
+
+- `changes-requested`: address each numbered change from the review.
+- `checks`: fix each failing check (never by weakening a test or a check).
+- `conflict`: the branch conflicts with `main`. Merge, do not rebase (rebasing would need a force
+  push, which is not allowed):
+
+  ```bash
+  git merge origin/main
+  ```
+
+  Resolve each conflict keeping both sides' intent. For a contract version conflict
+  (`contracts/package.json` and every spec's `info.version`), take `main`'s version and bump it to
+  the next minor above it, then run `node contracts/scripts/check-version.mjs`. Run
+  `make lint test`, commit the merge and push. If a conflict touches code outside the issue's scope
+  or you cannot tell which side is right, stop and comment on the PR instead of guessing.
+
+Commit, push (approvals reset automatically on new commits), then reply on the PR listing what
+changed per item (`$T comment $R $P -`), and:
 
 ```bash
 $T labels $R $P remove changes-requested
