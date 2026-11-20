@@ -35,6 +35,21 @@ jobs:
       - name: Production build
         run: make build
 
+  scripts:
+    name: scripts
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: ShellCheck
+        run: >-
+          docker run --rm -v "$PWD:/mnt" -w /mnt koalaman/shellcheck:v0.11.0 -S warning
+          scripts/*.sh scripts/tests/*.sh .claude/hooks/guard.sh .github/scripts/pr-policy.sh
+      - name: Picker and guard tests
+        run: make test-scripts
+
   gitleaks:
     name: gitleaks
     runs-on: ubuntu-latest
