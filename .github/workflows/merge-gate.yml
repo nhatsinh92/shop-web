@@ -1,0 +1,73 @@
+# Required checks that gate merging. Never calls a model; uses only GITHUB_TOKEN.
+# The policy script runs from the PR's base commit so a PR cannot weaken its own gate.
+name: merge-gate
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+  pull_request_review:
+    types: [submitted, edited, dismissed]
+
+permissions:
+  contents: read
+  issues: read
+  pull-requests: write # only to reset approval labels when new commits are pushed
+
+concurrency:
+  group: merge-gate-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+env:
+  GH_TOKEN: ${{ github.token }}
+  PR: ${{ github.event.pull_request.number }}
+  BASE_SHA: ${{ github.event.pull_request.base.sha }}
+  HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+  REPO_OWNER: ${{ github.repository_owner }}
+
+jobs:
+  protected-paths:
+    name: protected-paths
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out the policy from the base commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          persist-credentials: false
+          sparse-checkout: .github
+      - name: Use the PR's policy only if the base has none yet (bootstrap)
+        run: |
+          if [[ ! -f .github/scripts/pr-policy.sh ]]; then
+            git fetch --depth=1 origin "$HEAD_SHA"
+            git checkout FETCH_HEAD -- .github
+          fi
+      - name: Protected paths need the infra-change label
+        run: bash .github/scripts/pr-policy.sh protected "$PR"
+
+  merge-gate:
+    name: merge-gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Reset approvals after new commits
+        if: github.event_name == 'pull_request' && github.event.action == 'synchronize'
+        run: |
+          for label in agent-approved human-approved; do
+            gh api -X DELETE "repos/$GITHUB_REPOSITORY/issues/$PR/labels/$label" >/dev/null 2>&1 \
+              && echo "removed $label: approvals apply to the reviewed commit only" || true
+          done
+      - name: Check out the policy from the base commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          persist-credentials: false
+          sparse-checkout: .github
+      - name: Use the PR's policy only if the base has none yet (bootstrap)
+        run: |
+          if [[ ! -f .github/scripts/pr-policy.sh ]]; then
+            git fetch --depth=1 origin "$HEAD_SHA"
+            git checkout FETCH_HEAD -- .github
+          fi
+      - name: Agent approval, and owner approval for sensitive changes
+        run: bash .github/scripts/pr-policy.sh merge-gate "$PR"
