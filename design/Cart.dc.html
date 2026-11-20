@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Mây – Giỏ hàng</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#16181D}a:hover{color:#C2410C}
+@keyframes shimmer{0%{background-position:-400px 0}100%{background-position:400px 0}}
+.sk{background:linear-gradient(90deg,#EFEDEA 0px,#F7F6F4 120px,#EFEDEA 240px);background-size:800px 100%;animation:shimmer 1.4s linear infinite;border-radius:8px}
+</style>
+</helmet>
+<div style="font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #16181D; background: #FAFAF9; min-height: 100%">
+
+  <header style="border-bottom: 1px solid #E7E5E4; background: #FFFFFF">
+    <div style="max-width: 1240px; margin: 0 auto; padding: 16px 24px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 24px">
+      <div style="display: flex; align-items: center; gap: 16px">
+        <a href="Main.dc.html" style="font-weight: 800; font-size: 28px; letter-spacing: -0.03em; text-decoration: none; color: #16181D">Mây<span style="color: #C2410C">.</span></a>
+        <span style="width: 1px; height: 24px; background: #D6D3D1"></span>
+        <span style="font-size: 18px; font-weight: 700">Giỏ hàng</span>
+        <sc-if value="{{showNotes}}" hint-placeholder-val="{{ true }}"><span style="font: 600 11px/1 ui-monospace, Menlo, monospace; background: #334155; color: #FFFFFF; padding: 5px 7px; border-radius: 4px">STATIC shell</span></sc-if>
+      </div>
+      <a href="Main.dc.html" style="font-size: 14px; font-weight: 600; min-height: 44px; display: flex; align-items: center">← Tiếp tục mua sắm</a>
+    </div>
+  </header>
+
+  <main style="max-width: 1240px; margin: 0 auto; padding: 28px 24px 64px; display: flex; flex-direction: column; gap: 20px">
+
+    <sc-if value="{{isStale}}" hint-placeholder-val="{{ false }}">
+      <div role="status" style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; background: #FFFBEB; border: 1px solid #FCD34D; border-radius: 14px; padding: 14px 18px">
+        <div style="display: flex; align-items: center; gap: 12px">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#92400E" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v6M12 16.5v.5"></path></svg>
+          <span style="font-size: 14px; color: #78350F">Đang hiển thị giỏ hàng đã lưu. Giá và tồn kho sẽ được xác nhận khi thanh toán.</span>
+        </div>
+        <button type="button" onClick="{{retry}}" style="min-height: 40px; padding: 0 16px; border-radius: 10px; border: 1px solid #92400E; background: #FFFFFF; color: #78350F; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer">Thử lại</button>
+      </div>
+    </sc-if>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+
+      <section aria-label="Sản phẩm trong giỏ" style="flex: 999 1 620px; min-width: 0; display: flex; flex-direction: column; gap: 12px; position: relative">
+        <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; background: #FFFFFF; border: 1px solid #E7E5E4; border-radius: 16px; padding: 14px 20px">
+          <h1 style="margin: 0; font-size: 20px; font-weight: 800">Giỏ hàng <span style="font-weight: 500; color: #57534E">({{count}} sản phẩm)</span></h1>
+          <div style="display: flex; align-items: center; gap: 12px">
+            <sc-if value="{{showNotes}}" hint-placeholder-val="{{ true }}"><span style="font: 600 11px/1 ui-monospace, Menlo, monospace; background: #7C3AED; color: #FFFFFF; padding: 5px 7px; border-radius: 4px">STREAM 250ms → CLIENT fallback</span></sc-if>
+            <span aria-live="polite" style="{{syncStyle}}">{{syncLabel}}</span>
+          </div>
+        </div>
+
+        <sc-if value="{{isSkeleton}}" hint-placeholder-val="{{ false }}">
+          <div style="display: flex; flex-direction: column; gap: 12px">
+            <sc-for list="{{skRows}}" as="s" hint-placeholder-count="3">
+              <div style="display: flex; gap: 16px; align-items: center; background: #FFFFFF; border: 1px solid #E7E5E4; border-radius: 16px; padding: 16px 20px">
+                <div class="sk" style="width: 96px; height: 96px; border-radius: 12px; flex: none"></div>
+                <div style="flex: 1; display: flex; flex-direction: column; gap: 10px">
+                  <div class="sk" style="height: 16px; width: 70%"></div>
+                  <div class="sk" style="height: 14px; width: 35%"></div>
+                  <div class="sk" style="height: 20px; width: 25%"></div>
+                </div>
+                <div class="sk" style="width: 120px; height: 44px; border-radius: 12px; flex: none"></div>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{hasItems}}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; flex-direction: column; gap: 12px">
+            <sc-for list="{{items}}" as="it" hint-placeholder-count="3">
+              <article style="display: flex; flex-wrap: wrap; gap: 16px; align-items: center; background: #FFFFFF; border: 1px solid #E7E5E4; border-radius: 16px; padding: 16px 20px">
+                <div style="display: flex; align-items: center; gap: 16px; flex: 1 1 340px; min-width: 0">
+                  <input type="checkbox" id="{{it.cbId}}" checked="{{it.checked}}" onChange="{{it.toggle}}" aria-label="Chọn {{it.name}}" style="width: 20px; height: 20px; accent-color: #C2410C; flex: none">
+                  <div style="{{it.imgStyle}}"></div>
+                  <div style="display: flex; flex-direction: column; gap: 6px; min-width: 0">
+                    <a href="PDP.dc.html" style="font-size: 15px; font-weight: 600; text-decoration: none; line-height: 1.4">{{it.name}}</a>
+                    <span style="font-size: 13px; color: #57534E">{{it.variant}}</span>
+                    <div style="display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap">
+                      <span style="font-size: 16px; font-weight: 800; color: #C2410C">{{it.priceTxt}}</span>
+                      <span style="font-size: 13px; color: #78716C; text-decoration: line-through">{{it.oldTxt}}</span>
+                    </div>
+                    <span style="{{it.stockStyle}}">{{it.stock}}</span>
+                  </div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 16px; margin-left: auto">
+                  <div style="display: flex; align-items: center; border: 1px solid #D6D3D1; border-radius: 12px; overflow: hidden; background: #FFFFFF">
+                    <button type="button" aria-label="Giảm số lượng {{it.name}}" onClick="{{it.dec}}" style="width: 44px; height: 44px; border: 0; background: #FFFFFF; font-size: 18px; cursor: pointer">−</button>
+                    <span style="min-width: 36px; text-align: center; font-weight: 700; font-variant-numeric: tabular-nums">{{it.qty}}</span>
+                    <button type="button" aria-label="Tăng số lượng {{it.name}}" onClick="{{it.inc}}" style="width: 44px; height: 44px; border: 0; background: #FFFFFF; font-size: 18px; cursor: pointer">+</button>
+                  </div>
+                  <span style="min-width: 110px; text-align: right; font-weight: 700; font-variant-numeric: tabular-nums">{{it.lineTxt}}</span>
+                  <button type="button" aria-label="Xoá {{it.name}}" onClick="{{it.remove}}" style="width: 44px; height: 44px; border: 0; border-radius: 10px; background: transparent; color: #57534E; cursor: pointer; display: flex; align-items: center; justify-content: center">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"></path></svg>
+                  </button>
+                </div>
+              </article>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{isEmpty}}" hint-placeholder-val="{{ false }}">
+          <div style="background: #FFFFFF; border: 1px solid #E7E5E4; border-radius: 16px; padding: 48px 20px; display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center">
+            <span style="font-size: 18px; font-weight: 700">Giỏ hàng đang trống</span>
+            <a href="Main.dc.html" style="background: #C2410C; color: #FFFFFF; padding: 12px 20px; border-radius: 12px; text-decoration: none; font-weight: 700">Săn deal 12.12</a>
+          </div>
+        </sc-if>
+      </section>
+
+      <aside aria-label="Tóm tắt đơn hàng" style="flex: 1 1 340px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+        <div style="background: #FFFFFF; border: 1px solid #E7E5E4; border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 12px">
+          <label for="voucher" style="font-size: 14px; font-weight: 700">Mã giảm giá</label>
+          <div style="display: flex; gap: 8px">
+            <input id="voucher" placeholder="Nhập mã, ví dụ SALE1212" style="flex: 1; min-width: 0; height: 44px; border: 1px solid #D6D3D1; border-radius: 10px; padding: 0 12px; font: inherit; font-size: 14px">
+            <button type="button" style="height: 44px; padding: 0 16px; border-radius: 10px; border: 0; background: #16181D; color: #FFFFFF; font: inherit; font-weight: 600; cursor: pointer">Áp dụng</button>
+          </div>
+          <span style="font-size: 13px; color: #15803D; font-weight: 600">Đã áp dụng: SALE1212 (−120.000₫)</span>
+        </div>
+
+        <div style="background: #FFFFFF; border: 1px solid #E7E5E4; border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 14px">
+          <h2 style="margin: 0; font-size: 18px; font-weight: 800">Tóm tắt</h2>
+          <div style="display: flex; justify-content: space-between; font-size: 14px"><span style="color: #57534E">Tạm tính ({{selCount}} sản phẩm)</span><span style="font-variant-numeric: tabular-nums">{{subTxt}}</span></div>
+          <div style="display: flex; justify-content: space-between; font-size: 14px"><span style="color: #57534E">Voucher</span><span style="color: #15803D; font-variant-numeric: tabular-nums">{{discTxt}}</span></div>
+          <div style="display: flex; justify-content: space-between; font-size: 14px"><span style="color: #57534E">Phí vận chuyển</span><span>Miễn phí</span></div>
+          <div style="height: 1px; background: #E7E5E4"></div>
+          <div style="display: flex; justify-content: space-between; align-items: baseline"><span style="font-weight: 700">Tổng cộng</span><span style="font-size: 26px; font-weight: 800; color: #C2410C; font-variant-numeric: tabular-nums">{{totalTxt}}</span></div>
+          <sc-if value="{{isStale}}" hint-placeholder-val="{{ false }}"><span style="font-size: 12px; color: #78350F">Tổng tiền tạm tính theo giá đã lưu</span></sc-if>
+          <a href="Checkout.dc.html" style="height: 56px; border-radius: 14px; background: #C2410C; color: #FFFFFF; font-weight: 700; font-size: 16px; text-decoration: none; display: flex; align-items: center; justify-content: center">Thanh toán</a>
+          <span style="font-size: 12px; color: #57534E; text-align: center">Giá và tồn kho được xác nhận ở bước thanh toán</span>
+        </div>
+      </aside>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"showNotes":{"editor":"boolean","default":true},"cartState":{"editor":"enum","options":["loaded","skeleton","stale"],"default":"loaded"},"$preview":{"width":1440,"height":1240}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      sync: 'saved',
+      items: [
+        { id: 'a', name: 'Tai nghe không dây chống ồn ANC Pro', variant: 'Màu: Đen nhám', price: 890000, old: 1790000, qty: 1, checked: true, stock: 'Sắp hết', low: true, tone: '#F5E6DA' },
+        { id: 'b', name: 'Bàn phím cơ 75% hot-swap', variant: 'Switch: Brown · Layout: US', price: 1150000, old: 1690000, qty: 1, checked: true, stock: 'Còn hàng', low: false, tone: '#E3ECF7' },
+        { id: 'c', name: 'Bình giữ nhiệt inox 750ml', variant: 'Màu: Xanh rêu', price: 189000, old: 320000, qty: 2, checked: false, stock: 'Còn hàng', low: false, tone: '#E6F2EA' }
+      ]
+    };
+  }
+  componentWillUnmount() { clearTimeout(this.deb); clearTimeout(this.done); }
+  mutate(fn) {
+    this.setState({ items: fn(this.state.items), sync: 'saving' });
+    clearTimeout(this.deb); clearTimeout(this.done);
+    this.deb = setTimeout(() => {
+      this.setState({ sync: 'sending' });
+      this.done = setTimeout(() => this.setState({ sync: 'saved' }), 500);
+    }, 400);
+  }
+  renderVals() {
+    const vnd = (n) => n.toLocaleString('vi-VN') + '₫';
+    const mode = this.props.cartState ?? 'loaded';
+    const its = this.state.items;
+    const items = its.map((it) => ({
+      ...it,
+      cbId: 'cb-' + it.id,
+      priceTxt: vnd(it.price), oldTxt: vnd(it.old), lineTxt: vnd(it.price * it.qty),
+      imgStyle: 'width: 96px; height: 96px; border-radius: 12px; flex: none; background: ' + it.tone,
+      stockStyle: 'font-size: 12px; font-weight: 600; color: ' + (it.low ? '#9A3412' : '#15803D'),
+      inc: () => this.mutate((xs) => xs.map((x) => x.id === it.id ? { ...x, qty: Math.min(10, x.qty + 1) } : x)),
+      dec: () => this.mutate((xs) => xs.map((x) => x.id === it.id ? { ...x, qty: Math.max(1, x.qty - 1) } : x)),
+      remove: () => this.mutate((xs) => xs.filter((x) => x.id !== it.id)),
+      toggle: () => this.setState({ items: its.map((x) => x.id === it.id ? { ...x, checked: !x.checked } : x) })
+    }));
+    const sel = its.filter((x) => x.checked);
+    const sub = sel.reduce((s, x) => s + x.price * x.qty, 0);
+    const disc = sub > 0 ? 120000 : 0;
+    const sync = this.state.sync;
+    const syncLabel = sync === 'saving' ? 'Đang chờ… (debounce)' : sync === 'sending' ? 'Đang lưu…' : 'Đã lưu';
+    const syncColor = sync === 'saved' ? '#15803D' : '#57534E';
+    const skeleton = mode === 'skeleton';
+    return {
+      showNotes: this.props.showNotes ?? true,
+      isSkeleton: skeleton,
+      isStale: mode === 'stale',
+      hasItems: !skeleton && its.length > 0,
+      isEmpty: !skeleton && its.length === 0,
+      skRows: [1, 2, 3].map((k) => ({ k })),
+      items,
+      count: its.reduce((s, x) => s + x.qty, 0),
+      selCount: sel.reduce((s, x) => s + x.qty, 0),
+      subTxt: vnd(sub), discTxt: disc ? '−' + vnd(disc) : '0₫', totalTxt: vnd(Math.max(0, sub - disc)),
+      syncLabel, syncStyle: 'font-size: 13px; font-weight: 600; color: ' + syncColor,
+      retry: () => this.setState({ sync: 'sending' }, () => { this.done = setTimeout(() => this.setState({ sync: 'saved' }), 600); })
+    };
+  }
+}
+</script>
+</body>
+</html>

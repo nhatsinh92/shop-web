@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Mây – Thanh toán</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#16181D}a:hover{color:#C2410C}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</helmet>
+<div style="font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #16181D; background: #FAFAF9; min-height: 100%">
+
+  <header style="border-bottom: 1px solid #E7E5E4; background: #FFFFFF">
+    <div style="max-width: 1240px; margin: 0 auto; padding: 16px 24px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px">
+      <div style="display: flex; align-items: center; gap: 16px">
+        <a href="Main.dc.html" style="font-weight: 800; font-size: 28px; letter-spacing: -0.03em; text-decoration: none; color: #16181D">Mây<span style="color: #C2410C">.</span></a>
+        <span style="width: 1px; height: 24px; background: #D6D3D1"></span>
+        <span style="font-size: 18px; font-weight: 700">Thanh toán</span>
+        <sc-if value="{{showNotes}}" hint-placeholder-val="{{ true }}"><span style="font: 600 11px/1 ui-monospace, Menlo, monospace; background: #7C3AED; color: #FFFFFF; padding: 5px 7px; border-radius: 4px">DYNAMIC · no cache · proxy.ts refresh</span></sc-if>
+      </div>
+      <ol aria-label="Các bước" style="margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 13px">
+        <li style="color: #15803D; font-weight: 600">✓ Giỏ hàng</li>
+        <li aria-hidden="true" style="color: #A8A29E">—</li>
+        <li aria-current="step" style="font-weight: 700">2 Thông tin & thanh toán</li>
+        <li aria-hidden="true" style="color: #A8A29E">—</li>
+        <li style="color: #57534E">3 Hoàn tất</li>
+      </ol>
+    </div>
+  </header>
+
+  <main style="max-width: 1240px; margin: 0 auto; padding: 28px 24px 64px; display: flex; flex-direction: column; gap: 20px">
+
+    <div role="status" style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 14px; padding: 14px 18px">
+      <div style="display: flex; align-items: center; gap: 12px">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1E3A8A" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="13" r="8"></circle><path d="M12 9v4l2.5 2M9 2h6"></path></svg>
+        <span style="font-size: 14px; color: #1E3A8A">Sản phẩm đang được giữ cho bạn. Hoàn tất trong <strong style="font-variant-numeric: tabular-nums">{{holdTxt}}</strong> để giữ giá flash sale.</span>
+      </div>
+      <sc-if value="{{showNotes}}" hint-placeholder-val="{{ true }}"><span style="font: 600 11px/1 ui-monospace, Menlo, monospace; background: #1E3A8A; color: #FFFFFF; padding: 5px 7px; border-radius: 4px">reserve stock · TTL 10m</span></sc-if>
+    </div>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+      <div style="flex: 999 1 620px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+
+        <section aria-labelledby="addr-h" style="background: #FFFFFF; border: 1px solid #E7E5E4; border-radius: 16px; padding: 24px; display: flex; flex-direction: column; gap: 16px">
+          <h2 id="addr-h" style="margin: 0; font-size: 18px; font-weight: 800">Địa chỉ nhận hàng</h2>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px">
+            <div style="display: flex; flex-direction: column; gap: 6px">
+              <label for="ck-name" style="font-size: 13px; font-weight: 600">Họ và tên</label>
+              <input id="ck-name" value="Nguyễn Văn Sinh" style="height: 44px; border: 1px solid #D6D3D1; border-radius: 10px; padding: 0 12px; font: inherit; font-size: 15px">
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 6px">
+              <label for="ck-phone" style="font-size: 13px; font-weight: 600">Số điện thoại</label>
+              <input id="ck-phone" type="tel" placeholder="[SỐ ĐIỆN THOẠI]" style="height: 44px; border: 1px solid #D6D3D1; border-radius: 10px; padding: 0 12px; font: inherit; font-size: 15px">
+            </div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <label for="ck-addr" style="font-size: 13px; font-weight: 600">Địa chỉ</label>
+            <input id="ck-addr" placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành" style="height: 44px; border: 1px solid #D6D3D1; border-radius: 10px; padding: 0 12px; font: inherit; font-size: 15px">
+          </div>
+          <span style="font-size: 12px; color: #57534E">Form dùng React Hook Form + Zod schema chung với API</span>
+        </section>
+
+        <section aria-labelledby="ship-h" style="background: #FFFFFF; border: 1px solid #E7E5E4; border-radius: 16px; padding: 24px; display: flex; flex-direction: column; gap: 12px">
+          <h2 id="ship-h" style="margin: 0; font-size: 18px; font-weight: 800">Phương thức vận chuyển</h2>
+          <sc-for list="{{ships}}" as="o" hint-placeholder-count="2">
+            <label style="{{o.style}}">
+              <input type="radio" name="ship" checked="{{o.on}}" onChange="{{o.pick}}" style="width: 18px; height: 18px; accent-color: #C2410C">
+              <span style="flex: 1; display: flex; flex-direction: column; gap: 2px">
+                <span style="font-weight: 600; font-size: 15px">{{o.name}}</span>
+                <span style="font-size: 13px; color: #57534E">{{o.eta}}</span>
+              </span>
+              <span style="font-weight: 700; font-size: 14px">{{o.feeTxt}}</span>
+            </label>
+          </sc-for>
+        </section>
+
+        <section aria-labelledby="pay-h" style="background: #FFFFFF; border: 1px solid #E7E5E4; border-radius: 16px; padding: 24px; display: flex; flex-direction: column; gap: 12px">
+          <h2 id="pay-h" style="margin: 0; font-size: 18px; font-weight: 800">Phương thức thanh toán</h2>
+          <sc-for list="{{pays}}" as="o" hint-placeholder-count="3">
+            <label style="{{o.style}}">
+              <input type="radio" name="pay" checked="{{o.on}}" onChange="{{o.pick}}" style="width: 18px; height: 18px; accent-color: #C2410C">
+              <span style="flex: 1; display: flex; flex-direction: column; gap: 2px">
+                <span style="font-weight: 600; font-size: 15px">{{o.name}}</span>
+                <span style="font-size: 13px; color: #57534E">{{o.desc}}</span>
+              </span>
+            </label>
+          </sc-for>
+        </section>
+      </div>
+
+      <aside aria-label="Đơn hàng" style="flex: 1 1 360px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+        <div style="background: #FFFFFF; border: 1px solid #E7E5E4; border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 14px">
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px">
+            <h2 style="margin: 0; font-size: 18px; font-weight: 800">Đơn hàng (2 sản phẩm)</h2>
+            <a href="Cart.dc.html" style="font-size: 13px; font-weight: 600">Sửa</a>
+          </div>
+          <div style="display: flex; gap: 12px; align-items: center">
+            <div style="width: 56px; height: 56px; border-radius: 10px; background: #F5E6DA; flex: none"></div>
+            <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 14px; font-weight: 600">Tai nghe ANC Pro</span><span style="font-size: 12px; color: #57534E">Đen nhám · x1</span></div>
+            <span style="font-size: 14px; font-weight: 700">890.000₫</span>
+          </div>
+          <div style="display: flex; gap: 12px; align-items: center">
+            <div style="width: 56px; height: 56px; border-radius: 10px; background: #E3ECF7; flex: none"></div>
+            <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 14px; font-weight: 600">Bàn phím cơ 75%</span><span style="font-size: 12px; color: #57534E">Brown · US · x1</span></div>
+            <span style="font-size: 14px; font-weight: 700">1.150.000₫</span>
+          </div>
+          <div style="background: #F0FDF4; border-radius: 10px; padding: 10px 12px; font-size: 13px; color: #166534; display: flex; align-items: center; gap: 8px">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="m5 12 5 5 9-10"></path></svg>
+            Giá và tồn kho đã được xác nhận
+          </div>
+          <div style="height: 1px; background: #E7E5E4"></div>
+          <div style="display: flex; justify-content: space-between; font-size: 14px"><span style="color: #57534E">Tạm tính</span><span>2.040.000₫</span></div>
+          <div style="display: flex; justify-content: space-between; font-size: 14px"><span style="color: #57534E">Voucher SALE1212</span><span style="color: #15803D">−120.000₫</span></div>
+          <div style="display: flex; justify-content: space-between; font-size: 14px"><span style="color: #57534E">Vận chuyển</span><span>{{shipFeeTxt}}</span></div>
+          <div style="height: 1px; background: #E7E5E4"></div>
+          <div style="display: flex; justify-content: space-between; align-items: baseline"><span style="font-weight: 700">Tổng thanh toán</span><span style="font-size: 26px; font-weight: 800; color: #C2410C; font-variant-numeric: tabular-nums">{{totalTxt}}</span></div>
+
+          <sc-if value="{{idle}}" hint-placeholder-val="{{ true }}">
+            <button type="button" onClick="{{place}}" style="height: 56px; border-radius: 14px; border: 0; background: #C2410C; color: #FFFFFF; font: inherit; font-weight: 700; font-size: 16px; cursor: pointer">Đặt hàng</button>
+          </sc-if>
+          <sc-if value="{{submitting}}" hint-placeholder-val="{{ false }}">
+            <button type="button" disabled aria-busy="true" style="height: 56px; border-radius: 14px; border: 0; background: #9A3412; color: #FFFFFF; font: inherit; font-weight: 700; font-size: 16px; display: flex; align-items: center; justify-content: center; gap: 10px">
+              <span style="width: 18px; height: 18px; border: 2.5px solid rgba(255,255,255,0.4); border-top-color: #FFFFFF; border-radius: 50%; animation: spin 0.8s linear infinite"></span>
+              Đang xử lý…
+            </button>
+          </sc-if>
+          <sc-if value="{{done}}" hint-placeholder-val="{{ false }}">
+            <div role="status" style="border-radius: 14px; background: #F0FDF4; border: 1px solid #86EFAC; padding: 16px; display: flex; flex-direction: column; gap: 6px">
+              <span style="font-weight: 800; color: #166534">Đặt hàng thành công</span>
+              <span style="font-size: 13px; color: #166534">Mã đơn #MY-1212-0087 · Đã gửi xác nhận qua email</span>
+              <a href="Main.dc.html" style="font-size: 13px; font-weight: 700; color: #166534">Về trang chủ</a>
+            </div>
+          </sc-if>
+          <sc-if value="{{showNotes}}" hint-placeholder-val="{{ true }}"><span style="align-self: flex-start; font: 600 11px/1 ui-monospace, Menlo, monospace; background: #334155; color: #FFFFFF; padding: 5px 7px; border-radius: 4px">Idempotency-Key · disable khi submit</span></sc-if>
+          <span style="font-size: 12px; color: #57534E">Bằng việc đặt hàng, bạn đồng ý với <a href="#" style="color: #57534E">Điều khoản</a> của Mây.</span>
+        </div>
+      </aside>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"showNotes":{"editor":"boolean","default":true},"$preview":{"width":1440,"height":1480}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { ship: 0, pay: 0, phase: 'idle', hold: 600 }; }
+  componentDidMount() { this.iv = setInterval(() => this.setState({ hold: Math.max(0, this.state.hold - 1) }), 1000); }
+  componentWillUnmount() { clearInterval(this.iv); clearTimeout(this.t); }
+  renderVals() {
+    const vnd = (n) => n.toLocaleString('vi-VN') + '₫';
+    const s = this.state;
+    const opt = (on) => 'display: flex; align-items: center; gap: 14px; min-height: 56px; padding: 12px 16px; border-radius: 12px; cursor: pointer; border: ' + (on ? '2px solid #C2410C; background: #FFF7ED' : '1px solid #D6D3D1; background: #FFFFFF');
+    const shipDefs = [
+      { name: 'Giao tiêu chuẩn', eta: 'Nhận 13–14/12', fee: 0 },
+      { name: 'Giao nhanh 2h', eta: 'Nhận trong hôm nay (nội thành)', fee: 35000 }
+    ];
+    const ships = shipDefs.map((o, i) => ({ ...o, feeTxt: o.fee ? vnd(o.fee) : 'Miễn phí', on: i === s.ship, style: opt(i === s.ship), pick: () => this.setState({ ship: i }) }));
+    const pays = [
+      { name: 'Thanh toán khi nhận hàng (COD)', desc: 'Trả tiền mặt khi nhận' },
+      { name: 'Ví điện tử', desc: 'Chuyển sang ứng dụng ví để xác nhận' },
+      { name: 'Thẻ ngân hàng / thẻ tín dụng', desc: 'Hỗ trợ trả góp 0%' }
+    ].map((o, i) => ({ ...o, on: i === s.pay, style: opt(i === s.pay), pick: () => this.setState({ pay: i }) }));
+    const fee = shipDefs[s.ship].fee;
+    const pad = (n) => String(n).padStart(2, '0');
+    return {
+      showNotes: this.props.showNotes ?? true,
+      ships, pays,
+      shipFeeTxt: fee ? vnd(fee) : 'Miễn phí',
+      totalTxt: vnd(2040000 - 120000 + fee),
+      holdTxt: pad(Math.floor(s.hold / 60)) + ':' + pad(s.hold % 60),
+      idle: s.phase === 'idle', submitting: s.phase === 'submitting', done: s.phase === 'done',
+      place: () => {
+        if (s.phase !== 'idle') return;
+        this.setState({ phase: 'submitting' });
+        this.t = setTimeout(() => this.setState({ phase: 'done' }), 1400);
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>
