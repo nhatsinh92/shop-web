@@ -27,7 +27,7 @@ It prints one JSON object. Act on `action`:
 | `error`  | GitHub could not be read. Reply with the reason and end. Do not guess what to work on. |
 | `start`  | Sections 2, 3 and 4.                                                                   |
 | `resume` | Section 2 (resume), then 3 and 4.                                                      |
-| `fix`    | Section 5 (`why`: `changes-requested`, `conflict` or `checks`).                        |
+| `fix`    | Section 5 (`why`: `changes-requested`, `conflict`, `checks` or `needs-review`).        |
 | `triage` | Follow `.claude/prompts/triage.md` and end.                                            |
 
 `repo` is `owner/name`; work in that repository's checkout.
@@ -87,7 +87,7 @@ named after it.
 ## 4. Open the PR and get CI green
 
 ```bash
-$T pr-create $R <branch> "<area>: <issue title>" - review <area label> <phase label> <<'EOF'
+$T pr-create $R <branch> "<area>: <issue title>" - <area label> <phase label> <<'EOF'
 Closes #<N>
 
 ## What changed
@@ -103,7 +103,8 @@ $T labels $R $N remove in-progress
 bash /home/user/shop-api/scripts/heartbeat.sh $R $P worker <branch> - <<<"PR opened, waiting for CI"
 ```
 
-Then wait for CI and fix failures in the same run:
+Do **not** add `review` yet: adding it starts a reviewer run immediately, and the reviewer skips
+PRs whose checks are still running. Wait for CI and fix failures in the same run:
 
 ```bash
 $T checks-wait $R $P 30     # exit 0 green, 1 failing (prints the checks), 2 still pending
@@ -113,7 +114,14 @@ $T failed-logs $R $P        # when failing
 `merge-gate` stays red until the reviewer adds `agent-approved` (and the owner `human-approved` for
 sensitive paths); it is excluded from `checks-wait`, do not try to fix it. Fix every other failing
 check, push and wait again (up to three rounds). If it is still red, comment on the PR with what
-you tried and end. If `auto-merge` failed, say so in the PR comment; the owner can enable it.
+you tried and end without adding `review`. If `auto-merge` failed, say so in the PR comment; the
+owner can enable it.
+
+When `checks-wait` exits 0, hand the PR to the reviewer:
+
+```bash
+$T labels $R $P add review
+```
 
 ## 5. Fix a PR (`fix`)
 
@@ -130,6 +138,8 @@ What to do depends on `why`:
 
 - `changes-requested`: address each numbered change from the review.
 - `checks`: fix each failing check (never by weakening a test or a check).
+- `needs-review`: checks are green but the PR was never handed over. Run `$T checks-wait $R $P`;
+  when it exits 0, `$T labels $R $P add review` and end the run (nothing to change).
 - `conflict`: the branch conflicts with `main`. Merge, do not rebase (rebasing would need a force
   push, which is not allowed):
 
@@ -143,15 +153,14 @@ What to do depends on `why`:
   `make lint test`, commit the merge and push. If a conflict touches code outside the issue's scope
   or you cannot tell which side is right, stop and comment on the PR instead of guessing.
 
-Commit, push (approvals reset automatically on new commits), then reply on the PR listing what
-changed per item (`$T comment $R $P -`), and:
+Commit, push (approvals reset automatically on new commits), reply on the PR listing what changed
+per item (`$T comment $R $P -`), and remove the request label:
 
 ```bash
 $T labels $R $P remove changes-requested
-$T labels $R $P add review
 ```
 
-Wait for the checks as in section 4.
+Wait for the checks as in section 4, and add `review` only when `checks-wait` exits 0.
 
 ## 6. End of the run
 
