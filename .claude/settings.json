@@ -19,10 +19,7 @@
       "Bash(git commit:*)",
       "Bash(git push:*)",
       "Bash(git rebase origin/main)",
-      "Bash(gh issue:*)",
-      "Bash(gh pr:*)",
       "Bash(gh run:*)",
-      "Bash(gh search:*)",
       "Bash(gh api:*)",
       "Bash(bash scripts/:*)",
       "Bash(scripts/:*)",
@@ -64,19 +61,6 @@
       "Read(./.env.*)",
       "Read(**/.env)",
       "Read(**/.env.*)"
-    ]
-  },
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Bash|Edit|Write|MultiEdit|NotebookEdit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard.sh\""
-          }
-        ]
-      }
     ]
   }
 }

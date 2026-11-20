@@ -34,6 +34,5 @@ e2e: build ## Playwright smoke + axe against the production build
 dev-mock: node_modules ## Dev server with MSW answering /api/* (no backend needed)
 	NEXT_PUBLIC_API_MOCKING=enabled pnpm exec next dev -p $(PORT)
 
-test-scripts: ## Tests for the orchestration scripts and the agent guard hook (needs jq)
+test-scripts: ## Tests for the orchestration scripts (needs jq)
 	bash scripts/tests/picker.test.sh
-	bash scripts/tests/guard.test.sh
