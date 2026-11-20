@@ -95,3 +95,21 @@ check_state() {
 fresh_heartbeats_jq() {
   printf '.[] | select(.body | test("<!-- shop-agent:heartbeat role=%s ")) | ((now - (.updated_at | fromdateiso8601)) / 60 | floor) as $age | select($age < %s) | [(.issue_url | split("/") | last), $age] | map(tostring) | join("\\u001f")' "$1" "$STALE_MINUTES"
 }
+
+# jq over issue comments: "<comment id><US><issue number>" for fresh heartbeats of a role.
+fresh_heartbeat_ids_jq() {
+  printf '.[] | select(.body | test("<!-- shop-agent:heartbeat role=%s ")) | select(((now - (.updated_at | fromdateiso8601)) / 60) < %s) | [.id, (.issue_url | split("/") | last)] | map(tostring) | join("\\u001f")' "$1" "$STALE_MINUTES"
+}
+
+# gh_write <METHOD> <path> [gh api args...]: a mutating REST call. In fixture mode it is logged to
+# $SHOP_FIXTURES/writes.log instead of sent, and a POST prints $SHOP_FAKE_COMMENT_ID.
+gh_write() {
+  local method=$1 path=$2
+  shift 2
+  if [[ -n ${SHOP_FIXTURES:-} ]]; then
+    echo "$method $path" >>"$SHOP_FIXTURES/writes.log"
+    [[ $method == POST ]] && echo "${SHOP_FAKE_COMMENT_ID:-999}"
+    return 0
+  fi
+  gh api -X "$method" "$path" "$@"
+}
