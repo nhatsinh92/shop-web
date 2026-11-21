@@ -51,7 +51,7 @@ comment is your heartbeat: `heartbeat.sh` keeps editing it.
 ## 1. Rules for the whole run
 
 - Never force push, push to `main`, delete branches, change repository settings, or add or remove
-  the labels `human-approved`, `approved` or `infra-change`.
+  the labels `approved` or `infra-change`.
 - Stay inside the issue's **Scope**. Never edit protected paths (`.github/`, `.claude/`, lint, type
   and coverage config, existing tests) unless the issue is labelled `infra-change`. CI rejects it.
 - Never weaken checks: no `@Disabled`, `.skip`, `.only`, `eslint-disable`, `@ts-ignore`,
@@ -127,11 +127,10 @@ $T checks-wait $R $P 30     # exit 0 green, 1 failing (prints the checks), 2 sti
 $T failed-logs $R $P        # when failing
 ```
 
-`merge-gate` stays red until the reviewer adds `agent-approved` (and the owner `human-approved` for
-sensitive paths); it is excluded from `checks-wait`, do not try to fix it. Fix every other failing
-check, push and wait again (up to three rounds). If it is still red, comment on the PR with what
-you tried and end without adding `review`. If `auto-merge` failed, say so in the PR comment; the
-owner can enable it.
+Auto-merge squashes the PR as soon as every required check is green; there is no approval gate.
+Fix every failing check, push and wait again (up to three rounds). If it is still red, comment on
+the PR with what you tried and end without adding `review`. If `auto-merge` failed, say so in the
+PR comment; the owner can enable it.
 
 When `checks-wait` exits 0, hand the PR to the reviewer:
 

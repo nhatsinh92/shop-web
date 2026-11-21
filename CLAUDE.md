@@ -95,14 +95,15 @@ Boundaries (enforced by `eslint-plugin-boundaries`):
 ## What may change and what must not
 
 Each issue's **Scope** section is binding. Protected paths fail the `protected-paths` check unless
-the PR carries `infra-change` (added only by the owner or the planner), and `merge-gate` also needs
-the owner's `human-approved` label:
+the PR carries `infra-change` (added only by the owner or the planner):
 
 - `.github/**`, `.claude/**`
 - Lint, type and coverage config: `eslint.config.mjs`, `tsconfig.json`, `vitest.config.mts`,
   `vitest.setup.ts`, `playwright.config.ts`, `.prettierrc.json`, `.prettierignore`
 - Existing test files (`*.test.ts(x)`, `e2e/**`) that already exist on `main`
-- Security-sensitive code: `src/proxy.ts`, `src/features/auth/**`, `next.config.ts`
+
+Security-sensitive code (`src/proxy.ts`, `src/features/auth/**`, `next.config.ts`) has no extra CI
+gate: PRs auto-merge once CI is green. Change it only when the issue's scope names it.
 
 Never add `eslint-disable`, `@ts-ignore`, `@ts-expect-error`, `.skip` or `.only` to make a check
 pass; fix the code. Never edit tests or fixtures so that they pass; if a test is wrong, say so in

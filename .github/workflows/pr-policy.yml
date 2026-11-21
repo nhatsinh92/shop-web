@@ -1,0 +1,42 @@
+# Pull request policy check. Never calls a model; uses only GITHUB_TOKEN.
+# The policy script runs from the PR's base commit so a PR cannot weaken its own check.
+name: pr-policy
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+permissions:
+  contents: read
+  issues: read
+  pull-requests: read
+
+# No concurrency group on purpose: GitHub counts cancelled runs of a required check, so cancelling
+# superseded runs blocked merging even after a newer run passed. Every run reads the current labels
+# through the API, so the last run to finish reflects the latest state.
+
+env:
+  GH_TOKEN: ${{ github.token }}
+  PR: ${{ github.event.pull_request.number }}
+  HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+
+jobs:
+  protected-paths:
+    name: protected-paths
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out the policy from the base commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          persist-credentials: false
+          sparse-checkout: .github
+      - name: Use the PR's policy only if the base has none yet (bootstrap)
+        run: |
+          if [[ ! -f .github/scripts/pr-policy.sh ]]; then
+            git fetch --depth=1 origin "$HEAD_SHA"
+            git checkout FETCH_HEAD -- .github
+          fi
+      - name: Protected paths need the infra-change label
+        run: bash .github/scripts/pr-policy.sh protected "$PR"

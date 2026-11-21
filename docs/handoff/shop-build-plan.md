@@ -90,7 +90,7 @@ flowchart LR
   T[Scheduled tasks<br/>worker :05, reviewer :35] --> S[Cloud session<br/>picker, then the work]
   S <-- state --> GH[(GitHub<br/>issues, branches, PRs)]
   S <-- live transcript --> U[You, Claude app<br/>watch, steer, notified]
-  GH -- PR events --> A[GitHub Actions<br/>CI + merge-gate only]
+  GH -- PR events --> A[GitHub Actions<br/>CI + pr-policy only]
   A -- auto-merge --> GH
 ```
 
@@ -117,14 +117,14 @@ The contract agent and QA are not separate tasks: they are worker runs on `area:
 2. A worker run picks it with `next-task.sh`, labels it `in-progress` and posts a heartbeat comment.
 3. The worker commits and pushes after each step, updates the progress comment (done / next) and opens a PR labelled `review` with `Closes #N`.
 4. CI runs; the worker waits on `gh pr checks` and fixes failures in the same run, then enables auto-merge (`gh pr merge --auto --squash`).
-5. A reviewer run reviews the PR: `agent-approved`, or requested changes that the next worker run handles first.
-6. When `merge-gate` and the other required checks pass, GitHub auto-merges and the issue closes.
+5. When the required checks pass, GitHub auto-merges and the issue closes. There is no approval gate (owner decision, 2026-11-21).
+6. A reviewer run reviews a PR labelled `review` that is still open: `agent-approved` records the review, requested changes are handled first by the next worker run. Merging does not wait for it.
 
-### Identity and the merge gate
+### Identity and merging
 
-- Sessions act on GitHub through your Claude GitHub connection, so commits and PRs are authored as you, and GitHub does not let an author approve their own PR. Approvals are therefore labels, checked by a required CI job, `merge-gate`.
-- `merge-gate` passes when the PR has `agent-approved` and, if its diff touches a sensitive path (a contract major version, `gateway/`, the `auth` module, security config, `.github/`, `.claude/`, lint or coverage config), also `human-approved` added by the repo owner. It reads the diff itself rather than trusting labels added by bots.
-- `merge-gate` re-runs on every label change, push and review event.
+- Sessions act on GitHub through your Claude GitHub connection, so commits and PRs are authored as you, and GitHub does not let an author approve their own PR.
+- There is no approval gate (owner decision, 2026-11-21; the `merge-gate` check with `agent-approved` and `human-approved` was removed). A PR auto-merges once the required CI checks, including `protected-paths`, are green.
+- `protected-paths` still fails a PR that touches `.github/`, `.claude/`, lint or coverage config or existing tests without the `infra-change` label.
 
 ### Quota and resume (Claude Pro)
 
@@ -313,12 +313,11 @@ CI is the gatekeeper: nothing reaches `main` without required checks and the mer
 - Protected paths for workers: `.github/`, lint and coverage config, existing test files. A CI check fails any PR touching them without the `infra-change` label, which only the human or the planner can add.
 - Reviewer checklist: tests prove each acceptance criterion; no deleted or weakened tests; no new `@Disabled`, `.skip`, `eslint-disable` or `@SuppressWarnings`; no changes outside the issue scope.
 - Coverage gate applies to new code (80%), not the whole repo.
-- Branch protection: no direct pushes to `main`; required checks including `merge-gate`; sensitive PRs also need the owner's `human-approved` label.
+- Branch protection: no direct pushes to `main`; required checks are CI and `protected-paths`; no approval label is required.
 
 ### Public-repo safety
 
 - Never use `pull_request_target`, and never run privileged jobs on pull requests from forks.
-- `merge-gate` only accepts `human-approved` when the label was added by the repo owner (checked through the GitHub API, not the label alone).
 - No secrets beyond `GITHUB_TOKEN` exist in the repos; nothing prints or persists tokens.
 
 ## Cloud environment and local demo
@@ -338,7 +337,7 @@ Agent sessions run in a Claude Code cloud environment with both repos attached; 
 | Credential | Where it lives | Used for |
 | --- | --- | --- |
 | Claude GitHub connection | Your Claude account settings | Sessions clone, push, open PRs, comment and label |
-| `GITHUB_TOKEN` | GitHub Actions, per job | CI, `merge-gate`, publishing `@shop/api-contract` (`packages: write`) |
+| `GITHUB_TOKEN` | GitHub Actions, per job | CI, `pr-policy`, publishing `@shop/api-contract` (`packages: write`) |
 
 No Claude credential is stored in either public repo. Delete `CLAUDE_CODE_OAUTH_TOKEN` from both repos' secrets. The `shop-bot` GitHub App is no longer needed; uninstall it or leave it unused. The contract package is public, so `shop-web` installs it without a token.
 
@@ -357,17 +356,13 @@ cd shop-api && make demo-peak   # adds toxiproxy (slow cart-service), k6 load, G
 
 ## Human checkpoints
 
-The human is asked for five things; the Claude app pushes a notification when a run needs you, and GitHub Mobile shows the PR itself.
+The human is asked for three things; the Claude app pushes a notification when a run needs you, and GitHub Mobile shows the PR itself. PRs are not gated on human approval (owner decision, 2026-11-21).
 
 | Checkpoint | Trigger | What the human does |
 | --- | --- | --- |
 | Roadmap and epics | A planner run opens a PR with `plans/roadmap.md` or a new epic | Review and merge; label the epic `approved` |
-| Contract major version | `merge-gate` sees a breaking change in `contracts/` | Review the PR; add `human-approved` |
-| Auth or security change | Files under `gateway/`, the `auth` module or security config | Review the PR; add `human-approved` |
-| Infra or CI change | Files under `.github/`, `.claude/`, lint or coverage config | Review the PR; add `human-approved` |
+| Infra or CI change | An issue needs `.github/`, `.claude/`, lint or coverage config | Add `infra-change` to the issue and PR |
 | Blocked task | Three failed attempts on one issue | Read the triage comment; edit, split or close the issue |
-
-While such a PR waits, worker runs keep picking tasks that do not depend on it.
 
 ### Before the first run
 

@@ -24,11 +24,12 @@ Tailwind CSS v4 + shadcn/ui, pnpm. UI source of truth: `design/` and the live ca
 
 ## Deviations from the plan, decided during bootstrap
 
-| Topic                   | Plan                           | Now                                               | Why                                                                                                        |
-| ----------------------- | ------------------------------ | ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| Contract package source | npm package on GitHub Packages | Pinned GitHub Release tarball URL from shop-api   | GitHub Packages needs an owner-matching scope and a token even for public packages; approved by the owner. |
-| Toast primitive         | shadcn/ui Toast                | shadcn/ui Sonner (`src/components/ui/sonner.tsx`) | shadcn/ui replaced its Toast component with Sonner.                                                        |
-| `cn()` helper           | `clsx` + `tailwind-merge`      | Same, kept as planned                             | shadcn now defaults to its `cn` package; the plan's choice was kept.                                       |
+| Topic                   | Plan                                                    | Now                                               | Why                                                                                                        |
+| ----------------------- | ------------------------------------------------------- | ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Contract package source | npm package on GitHub Packages                          | Pinned GitHub Release tarball URL from shop-api   | GitHub Packages needs an owner-matching scope and a token even for public packages; approved by the owner. |
+| Toast primitive         | shadcn/ui Toast                                         | shadcn/ui Sonner (`src/components/ui/sonner.tsx`) | shadcn/ui replaced its Toast component with Sonner.                                                        |
+| `cn()` helper           | `clsx` + `tailwind-merge`                               | Same, kept as planned                             | shadcn now defaults to its `cn` package; the plan's choice was kept.                                       |
+| Merge approval          | `merge-gate` with `agent-approved` and `human-approved` | No approval gate: auto-merge on green CI          | Owner decision on 2026-11-21; `protected-paths` and `infra-change` stay.                                   |
 
 ## Housekeeping tasks (infra, not tied to a phase)
 
