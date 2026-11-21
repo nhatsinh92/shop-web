@@ -23,6 +23,7 @@ export default defineConfig([
     "test-results/**",
     "next-env.d.ts",
     "public/mockServiceWorker.js",
+    "src/lib/api/generated/**",
     "design/**",
   ]),
 
