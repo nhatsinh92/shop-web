@@ -18,7 +18,11 @@ permissions:
 env:
   GH_TOKEN: ${{ github.token }}
   PR: ${{ github.event.pull_request.number }}
+  # BASE_SHA and REPO_OWNER are unused by the current policy script but kept so older base commits,
+  # whose script still requires them, keep working.
+  BASE_SHA: ${{ github.event.pull_request.base.sha }}
   HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+  REPO_OWNER: ${{ github.repository_owner }}
 
 jobs:
   protected-paths:
