@@ -1,3 +1,4 @@
+import { authHandlers } from "./auth-handlers";
 import { cartSummaryFixture } from "./fixtures/cart";
 import { cartHttp } from "./http";
 
@@ -7,4 +8,5 @@ import { cartHttp } from "./http";
  */
 export const handlers = [
   cartHttp.get("/api/cart/summary", ({ response }) => response(200).json(cartSummaryFixture)),
+  ...authHandlers,
 ];
