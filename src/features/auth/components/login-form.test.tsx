@@ -8,7 +8,10 @@ import { demoCredentials } from "@mocks/fixtures/auth";
 import { authOverrides } from "@mocks/auth-handlers";
 import { server } from "@mocks/node";
 
+import { notifySessionHintChanged } from "../session-hint";
 import { LoginForm } from "./login-form";
+
+vi.mock("../session-hint", () => ({ notifySessionHintChanged: vi.fn() }));
 
 const replace = vi.fn();
 let nextParam: string | null = null;
@@ -35,6 +38,7 @@ async function fill(user: ReturnType<typeof userEvent.setup>, email: string, pas
 
 beforeEach(() => {
   replace.mockClear();
+  vi.mocked(notifySessionHintChanged).mockClear();
   nextParam = null;
 });
 
@@ -61,6 +65,10 @@ describe("LoginForm", () => {
     await user.click(screen.getByRole("button", { name: "Đăng nhập" }));
     await waitFor(() => expect(replace).toHaveBeenCalledWith("/account"));
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ["auth"] });
+    expect(notifySessionHintChanged).toHaveBeenCalledTimes(1);
+    const notifyOrder = vi.mocked(notifySessionHintChanged).mock.invocationCallOrder[0] ?? 0;
+    const replaceOrder = replace.mock.invocationCallOrder[0] ?? 0;
+    expect(notifyOrder).toBeLessThan(replaceOrder);
   });
 
   it("redirects to / when next is unsafe", async () => {
