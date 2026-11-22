@@ -123,7 +123,7 @@ The contract agent and QA are not separate tasks: they are worker runs on `area:
 ### Identity and the merge gate
 
 - Sessions act on GitHub through your Claude GitHub connection, so commits and PRs are authored as you, and GitHub does not let an author approve their own PR. Approvals are therefore labels, checked by a required CI job, `merge-gate`.
-- `merge-gate` passes when the PR has `agent-approved` and, if its diff touches a sensitive path (a contract major version, `gateway/`, the `auth` module, security config, `.github/`, `.claude/`, lint or coverage config), also `human-approved` added by the repo owner. It reads the diff itself rather than trusting labels added by bots.
+- `merge-gate` passes when the PR has `agent-approved` and, if its diff touches a protected path (a contract major version, `.github/`, `.claude/`, lint or coverage config, existing tests), also `human-approved` added by the repo owner. It reads the diff itself rather than trusting labels added by bots.
 - `merge-gate` re-runs on every label change, push and review event.
 
 ### Quota and resume (Claude Pro)
@@ -313,7 +313,7 @@ CI is the gatekeeper: nothing reaches `main` without required checks and the mer
 - Protected paths for workers: `.github/`, lint and coverage config, existing test files. A CI check fails any PR touching them without the `infra-change` label, which only the human or the planner can add.
 - Reviewer checklist: tests prove each acceptance criterion; no deleted or weakened tests; no new `@Disabled`, `.skip`, `eslint-disable` or `@SuppressWarnings`; no changes outside the issue scope.
 - Coverage gate applies to new code (80%), not the whole repo.
-- Branch protection: no direct pushes to `main`; required checks including `merge-gate`; sensitive PRs also need the owner's `human-approved` label.
+- Branch protection: no direct pushes to `main`; required checks including `merge-gate`; PRs touching protected paths also need the owner's `human-approved` label. Auth and security code merges on `agent-approved` and green CI (owner decision 2026-11-22).
 
 ### Public-repo safety
 
@@ -357,13 +357,12 @@ cd shop-api && make demo-peak   # adds toxiproxy (slow cart-service), k6 load, G
 
 ## Human checkpoints
 
-The human is asked for five things; the Claude app pushes a notification when a run needs you, and GitHub Mobile shows the PR itself.
+The human is asked for four things; the Claude app pushes a notification when a run needs you, and GitHub Mobile shows the PR itself.
 
 | Checkpoint | Trigger | What the human does |
 | --- | --- | --- |
 | Roadmap and epics | A planner run opens a PR with `plans/roadmap.md` or a new epic | Review and merge; label the epic `approved` |
 | Contract major version | `merge-gate` sees a breaking change in `contracts/` | Review the PR; add `human-approved` |
-| Auth or security change | Files under `gateway/`, the `auth` module or security config | Review the PR; add `human-approved` |
 | Infra or CI change | Files under `.github/`, `.claude/`, lint or coverage config | Review the PR; add `human-approved` |
 | Blocked task | Three failed attempts on one issue | Read the triage comment; edit, split or close the issue |
 

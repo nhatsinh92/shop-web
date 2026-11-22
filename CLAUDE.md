@@ -102,7 +102,10 @@ the owner's `human-approved` label:
 - Lint, type and coverage config: `eslint.config.mjs`, `tsconfig.json`, `vitest.config.mts`,
   `vitest.setup.ts`, `playwright.config.ts`, `.prettierrc.json`, `.prettierignore`
 - Existing test files (`*.test.ts(x)`, `e2e/**`) that already exist on `main`
-- Security-sensitive code: `src/proxy.ts`, `src/features/auth/**`, `next.config.ts`
+
+Security-sensitive code (`src/proxy.ts`, `src/features/auth/**`, `next.config.ts`) is **not**
+protected (owner decision 2026-11-22): it merges on `agent-approved` and green CI, and the reviewer applies the
+security checklist in its prompt.
 
 Never add `eslint-disable`, `@ts-ignore`, `@ts-expect-error`, `.skip` or `.only` to make a check
 pass; fix the code. Never edit tests or fixtures so that they pass; if a test is wrong, say so in

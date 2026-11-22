@@ -85,9 +85,13 @@ label added while the PR still carries `review`, so adding the verdict first sta
 empty reviewer run.
 
 - **Approve:** `$T labels $R $P remove review`, then `$T labels $R $P add agent-approved`.
-  If the diff touches sensitive paths (`gateway/`, the `auth` module, security config, `.github/`,
-  `.claude/`, lint or coverage config, existing tests, a contract major bump), say in the comment
-  that it now waits for the owner's `human-approved`.
+  If the diff touches protected paths (`.github/`, `.claude/`, lint, type or coverage config,
+  existing tests) or bumps the contract major version, say in the comment that it now waits for the
+  owner's `human-approved`. Security-sensitive code (auth, gateway, `proxy.ts`, security config)
+  merges on your approval alone, so for it also check, and name in the comment: no secret or token
+  logged or returned in a body; cookie flags as in the contract; token, signature, issuer, audience
+  and expiry checks covered by tests, including negative cases; no open redirect; no weakened CORS,
+  `Origin` or rate-limit rule. Request changes when one is not proven by a test.
 - **Request changes:** list each required change as a numbered item with file:line and why, then
   `$T labels $R $P remove review`, then `$T labels $R $P add changes-requested`.
   The next worker run picks it up.
