@@ -65,7 +65,7 @@ others=$(api "repos/$repo/issues/comments?since=$since&per_page=100" \
 while IFS= read -r row; do
   [[ -n $row ]] || continue
   id=$(jq -r .id <<<"$row")
-  other_body=$(jq -r --arg done "$DONE_MARKER" '.body | sub("\n"; "\n" + $done + "\n")' <<<"$row")
+  other_body=$(jq -r --arg marker "$DONE_MARKER" '.body | sub("\n"; "\n" + $marker + "\n")' <<<"$row")
   [[ $other_body == *"$DONE_MARKER"* ]] || other_body="$(jq -r .body <<<"$row")
 $DONE_MARKER"
   gh_write PATCH "repos/$repo/issues/comments/$id" -f "body=$other_body" --silent
