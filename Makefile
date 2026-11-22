@@ -41,4 +41,5 @@ check-api: node_modules ## Regenerate API types and fail when src/lib/api/genera
 test-scripts: ## Tests for the orchestration scripts (needs jq)
 	bash scripts/tests/picker.test.sh
 	bash scripts/tests/claim.test.sh
+	bash scripts/tests/claim-shared-heartbeat.test.sh
 	bash scripts/tests/heartbeat.test.sh
