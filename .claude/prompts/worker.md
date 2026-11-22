@@ -140,7 +140,7 @@ $T failed-logs $R $P        # when failing
 ```
 
 `merge-gate` stays red until the reviewer adds `agent-approved` (and the owner `human-approved` for
-sensitive paths); it is excluded from `checks-wait`, do not try to fix it. Fix every other failing
+protected paths or a contract major bump); it is excluded from `checks-wait`, do not try to fix it. Fix every other failing
 check, push and wait again (up to three rounds). If it is still red, comment on the PR with what
 you tried, write the `done` heartbeat and end without adding `review`. If `auto-merge` failed, say so in the PR comment; the
 owner can enable it.
