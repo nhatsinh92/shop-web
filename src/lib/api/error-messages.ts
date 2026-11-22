@@ -26,6 +26,8 @@ export const errorMessages: Record<string, string> = {
   IDEMPOTENCY_IN_PROGRESS: "Yêu cầu đang được xử lý. Vui lòng đợi trong giây lát.",
   UNPROCESSABLE_ENTITY: "Không thể xử lý yêu cầu. Vui lòng kiểm tra lại thông tin.",
   RATE_LIMITED: "Bạn thao tác quá nhanh. Vui lòng thử lại sau ít phút.",
+  PRODUCT_UPDATE_INVALID: GENERIC_ERROR_MESSAGE,
+  REVALIDATE_SIGNATURE_INVALID: GENERIC_ERROR_MESSAGE,
   INTERNAL_ERROR: GENERIC_ERROR_MESSAGE,
   SERVICE_UNAVAILABLE: "Hệ thống đang quá tải. Vui lòng thử lại sau.",
   NETWORK_ERROR: "Không thể kết nối. Vui lòng kiểm tra kết nối mạng và thử lại.",
