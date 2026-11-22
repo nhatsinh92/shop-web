@@ -1,4 +1,4 @@
-import { CircleUserRound, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
@@ -9,6 +9,8 @@ import { categories, promoMessages } from "../site-header.data";
 type SiteHeaderProps = {
   /** Client-rendered cart link (the cart feature's CartBadge), composed by app/. */
   cartSlot: ReactNode;
+  /** Client-rendered account entry (the auth feature's AccountEntry), composed by app/. */
+  accountSlot?: ReactNode;
 };
 
 /**
@@ -16,7 +18,7 @@ type SiteHeaderProps = {
  * A Server Component with no data access, so it is part of the static shell. User-specific
  * parts (account, cart) are client components passed in as slots.
  */
-export function SiteHeader({ cartSlot }: SiteHeaderProps) {
+export function SiteHeader({ cartSlot, accountSlot }: SiteHeaderProps) {
   return (
     <>
       <div className="bg-ink text-[13px] text-white">
@@ -56,13 +58,7 @@ export function SiteHeader({ cartSlot }: SiteHeaderProps) {
           </form>
 
           <nav aria-label="Tài khoản" className="flex items-center gap-2">
-            <Link
-              href="/account"
-              className="flex min-h-touch items-center gap-2 rounded-lg px-3 text-sm font-medium text-ink no-underline"
-            >
-              <CircleUserRound aria-hidden="true" className="size-[22px]" strokeWidth={1.8} />
-              Tài khoản
-            </Link>
+            {accountSlot}
             {cartSlot}
           </nav>
         </div>

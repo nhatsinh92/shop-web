@@ -24,6 +24,7 @@ lint: node_modules ## ESLint (feature boundaries, TanStack Query, no raw hex), t
 
 build: node_modules ## Production build
 	pnpm build
+	node scripts/check-static-shell.mjs
 
 demo: build ## Production build + next start on http://localhost:$(PORT) (/api/* -> gateway :8080)
 	pnpm exec next start -p $(PORT)
