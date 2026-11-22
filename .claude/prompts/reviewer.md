@@ -80,14 +80,25 @@ $T pr-review $R $P - <<'EOF'
 EOF
 ```
 
-- **Approve:** `$T labels $R $P add agent-approved` and `$T labels $R $P remove review`.
+Always remove `review` **before** adding the verdict label. The reviewer trigger fires on every
+label added while the PR still carries `review`, so adding the verdict first starts a second,
+empty reviewer run.
+
+- **Approve:** `$T labels $R $P remove review`, then `$T labels $R $P add agent-approved`.
   If the diff touches sensitive paths (`gateway/`, the `auth` module, security config, `.github/`,
   `.claude/`, lint or coverage config, existing tests, a contract major bump), say in the comment
   that it now waits for the owner's `human-approved`.
 - **Request changes:** list each required change as a numbered item with file:line and why, then
-  `$T labels $R $P add changes-requested` and `$T labels $R $P remove review`.
+  `$T labels $R $P remove review`, then `$T labels $R $P add changes-requested`.
   The next worker run picks it up.
 - If the issue itself is wrong or ambiguous, say so, add `blocked` to the PR, and comment on the
   issue for the owner instead of approving.
+
+Then mark your heartbeat done, so a reviewer run started when the worker re-adds `review` after a
+fix is not skipped as "another reviewer is on it":
+
+```bash
+bash /home/user/shop-api/scripts/heartbeat.sh $R $P reviewer - - done <<<"<verdict>"
+```
 
 End with a one-line summary: PR, verdict, what the owner needs to do (if anything).
