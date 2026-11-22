@@ -1,4 +1,4 @@
-import { AccountEntry } from "@/features/auth";
+import { AccountEntry, SessionExpiryHandler } from "@/features/auth";
 import { CartBadge } from "@/features/cart";
 import { SiteHeader } from "@/features/site-header";
 
@@ -6,6 +6,7 @@ import { SiteHeader } from "@/features/site-header";
 export default function ShopLayout({ children }: LayoutProps<"/">) {
   return (
     <>
+      <SessionExpiryHandler />
       <SiteHeader accountSlot={<AccountEntry />} cartSlot={<CartBadge />} />
       {children}
     </>
