@@ -170,8 +170,8 @@ importers:
         specifier: ^7.0.7
         version: 7.0.7(ajv-formats@2.1.1(ajv@8.20.0))(ajv@8.20.0)(react-hook-form@7.92.0(@types/react@19.3.0)(react@19.3.0))(zod@4.6.7)
       '@shop/api-contract':
-        specifier: https://github.com/nhatsinh92/shop-api/releases/download/contract-v0.6.0/shop-api-contract-0.6.0.tgz
-        version: https://github.com/nhatsinh92/shop-api/releases/download/contract-v0.6.0/shop-api-contract-0.6.0.tgz
+        specifier: https://github.com/nhatsinh92/shop-api/releases/download/contract-v0.7.0/shop-api-contract-0.7.0.tgz
+        version: https://github.com/nhatsinh92/shop-api/releases/download/contract-v0.7.0/shop-api-contract-0.7.0.tgz
       '@tanstack/query-async-storage-persister':
         specifier: ^5.108.0
         version: 5.108.0
@@ -284,6 +284,9 @@ importers:
       msw:
         specifier: ^3.0.7
         version: 3.0.7(@types/node@20.19.43)(supports-color@10.2.2)(typescript@5.9.3)(vite@8.3.8(@types/node@20.19.43)(jiti@2.7.0))
+      openapi-msw:
+        specifier: 2.1.1
+        version: 2.1.1(msw@3.0.7(@types/node@20.19.43)(supports-color@10.2.2)(typescript@5.9.3)(vite@8.3.8(@types/node@20.19.43)(jiti@2.7.0)))
       openapi-typescript:
         specifier: 7.13.0
         version: 7.13.0(typescript@5.9.3)
@@ -1702,9 +1705,9 @@ packages:
   '@rtsao/scc@1.1.0':
     resolution: {integrity: sha512-zt6OdqaDoOnJ1ZYsCYGt9YmWzDXl4vQdKTyJev62gFhRGKdx7mcT54V9KIjg+d2wi9EXsPvAPKe7i7WjfVWB8g==}
 
-  '@shop/api-contract@https://github.com/nhatsinh92/shop-api/releases/download/contract-v0.6.0/shop-api-contract-0.6.0.tgz':
-    resolution: {integrity: sha512-KHUOUfl5UbQBNbBWWBpKWGpJ+UyxnWh4MHX9zTDHuSXRbW9mP/3I6vBLZShgWhI+d6AK8DpIuI8kLOPLZBUhLQ==, tarball: https://github.com/nhatsinh92/shop-api/releases/download/contract-v0.6.0/shop-api-contract-0.6.0.tgz}
-    version: 0.6.0
+  '@shop/api-contract@https://github.com/nhatsinh92/shop-api/releases/download/contract-v0.7.0/shop-api-contract-0.7.0.tgz':
+    resolution: {integrity: sha512-gnqc2IhjQNuRbwaTXFh4YLmTO41mQHEejs6qgWoNF/SqHkvXcTULqBxRWFruPkSvKVWGX1tVV27nES1IdVvTrQ==, tarball: https://github.com/nhatsinh92/shop-api/releases/download/contract-v0.7.0/shop-api-contract-0.7.0.tgz}
+    version: 0.7.0
 
   '@standard-schema/utils@0.3.0':
     resolution: {integrity: sha512-e7Mew686owMaPJVNNLs55PUvgz371nKgwsc4vxE49zsODpJEnxgxRo2y/OKrqueavXgZNMDVj3DdHFlaSAeU8g==}
@@ -3401,6 +3404,11 @@ packages:
 
   openapi-fetch@0.17.0:
     resolution: {integrity: sha512-PsbZR1wAPcG91eEthKhN+Zn92FMHxv+/faECIwjXdxfTODGSGegYv0sc1Olz+HYPvKOuoXfp+0pA2XVt2cI0Ig==}
+
+  openapi-msw@2.1.1:
+    resolution: {integrity: sha512-i1VM4ZbM5r0bS2w/sVv0MuUjfRw+ub68LKO+oqUeVC9QVTjghytDGy+GVEFrb3FUV7l5BwAVbpiqlWjZ9RIALw==}
+    peerDependencies:
+      msw: ^2.10.5 || ^3.0.0
 
   openapi-typescript-helpers@0.1.0:
     resolution: {integrity: sha512-OKTGPthhivLw/fHz6c3OPtg72vi86qaMlqbJuVJ23qOvQ+53uw1n7HdmkJFibloF7QEjDrDkzJiOJuockM/ljw==}
@@ -5530,7 +5538,7 @@ snapshots:
 
   '@rtsao/scc@1.1.0': {}
 
-  '@shop/api-contract@https://github.com/nhatsinh92/shop-api/releases/download/contract-v0.6.0/shop-api-contract-0.6.0.tgz': {}
+  '@shop/api-contract@https://github.com/nhatsinh92/shop-api/releases/download/contract-v0.7.0/shop-api-contract-0.7.0.tgz': {}
 
   '@standard-schema/utils@0.3.0': {}
 
@@ -7322,6 +7330,10 @@ snapshots:
   openapi-fetch@0.17.0:
     dependencies:
       openapi-typescript-helpers: 0.1.0
+
+  openapi-msw@2.1.1(msw@3.0.7(@types/node@20.19.43)(supports-color@10.2.2)(typescript@5.9.3)(vite@8.3.8(@types/node@20.19.43)(jiti@2.7.0))):
+    dependencies:
+      msw: 3.0.7(@types/node@20.19.43)(supports-color@10.2.2)(typescript@5.9.3)(vite@8.3.8(@types/node@20.19.43)(jiti@2.7.0))
 
   openapi-typescript-helpers@0.1.0: {}
 

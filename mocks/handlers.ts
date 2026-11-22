@@ -1,7 +1,10 @@
-import { http, HttpResponse } from "msw";
+import { cartSummaryFixture } from "./fixtures/cart";
+import { cartHttp } from "./http";
 
 /**
- * MSW handlers for tests and local mock mode. Phase 1 (epic contract-client) generates these
- * from @shop/api-contract; until then they mirror the provisional schemas in src/features.
+ * MSW handlers for tests and local mock mode. They use only the typed helpers from ./http, so
+ * every handler is checked against @shop/api-contract. Each feature adds its own handlers.
  */
-export const handlers = [http.get("*/api/cart/summary", () => HttpResponse.json({ itemCount: 3 }))];
+export const handlers = [
+  cartHttp.get("/api/cart/summary", ({ response }) => response(200).json(cartSummaryFixture)),
+];
