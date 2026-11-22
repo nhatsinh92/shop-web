@@ -32,11 +32,11 @@ fi
 branch=${4:?branch}
 source_file=${5:--}
 state=${6:-}
-[[ -z $state || $state == done ]] || { echo "heartbeat: the sixth argument must be 'done'" >&2; exit 2; }
+[[ -z $state || $state == "done" ]] || { echo "heartbeat: the sixth argument must be 'done'" >&2; exit 2; }
 progress=$(if [[ $source_file == - ]]; then [[ -t 0 ]] && echo "_Starting._" || cat; else cat "$source_file"; fi)
 marker="<!-- shop-agent:heartbeat role=$role branch=$branch -->"
 status=updated
-[[ $state == done ]] && status=finished
+[[ $state == "done" ]] && status=finished
 body="$marker${state:+
 $DONE_MARKER}
 **${role^} progress** · branch \`$branch\` · $status $(date -u +%Y-%m-%dT%H:%M:%SZ)
@@ -55,7 +55,7 @@ else
 fi
 echo "heartbeat comment $mine${state:+ (done)}"
 
-[[ $state == done && $branch != - ]] || exit 0
+[[ $state == "done" && $branch != - ]] || exit 0
 
 # Mark this run's other fresh heartbeats (same role and branch) done as well.
 since=$(minutes_ago "$STALE_MINUTES")

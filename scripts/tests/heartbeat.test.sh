@@ -15,7 +15,7 @@ ago() { date -u -d "-$1 min" +%Y-%m-%dT%H:%M:%SZ; }
 put() { local path=${1%%\?*}; printf '%s' "$2" >"$work/${path//\//_}.json"; }
 hb() { # id issue-number updated-min-ago [role] [branch] [done]
   local extra=""
-  [[ ${6:-} == done ]] && extra='\n<!-- shop-agent:done -->'
+  [[ ${6:-} == "done" ]] && extra='\n<!-- shop-agent:done -->'
   printf '{"id":%s,"issue_url":"https://api.github.com/repos/o/r/issues/%s","body":"<!-- shop-agent:heartbeat role=%s branch=%s -->%s\\nprogress","updated_at":"%s"}' \
     "$1" "$2" "${4:-worker}" "${5:-claude/issue-$2-x}" "$extra" "$(ago "$3")"
 }
@@ -51,13 +51,13 @@ expect "  (reason names the busy issue)" 'worker heartbeat on o/shop-api #11 is 
   "$(SHOP_FIXTURES=$work bash "$scripts/next-task.sh" | jq -r .reason)"
 
 reset
-recent shop-api "$(hb 40 11 4 worker claude/issue-11-x done)"
+recent shop-api "$(hb 40 11 4 worker claude/issue-11-x "done")"
 expect "a fresh but done worker heartbeat does not block the worker picker" \
   'nothing ready in o/shop-api o/shop-web' "$(SHOP_FIXTURES=$work bash "$scripts/next-task.sh" | jq -r .reason)"
 
 reset
 item shop-api 6
-recent shop-api "$(hb 40 11 4 worker claude/issue-11-x done),$(hb 100 6 0)"
+recent shop-api "$(hb 40 11 4 worker claude/issue-11-x "done"),$(hb 100 6 0)"
 expect "a done worker heartbeat does not make claim.sh lose" '{"claimed":true,"comment":100}' "$(claim)"
 
 reset
@@ -65,17 +65,17 @@ put "repos/o/shop-api/pulls" '[{"number":7,"created_at":"'"$(ago 30)"'","draft":
 put "repos/o/shop-api/commits/sha7/check-runs" '{"check_runs":[{"name":"build","status":"completed","conclusion":"success","started_at":"'"$(ago 5)"'"}]}'
 recent shop-api "$(hb 41 7 3 reviewer -)"
 expect "a fresh reviewer heartbeat still makes the review picker skip the PR" '{"action":"none"}' "$(review)"
-recent shop-api "$(hb 41 7 3 reviewer - done)"
+recent shop-api "$(hb 41 7 3 reviewer - "done")"
 expect "a done reviewer heartbeat does not make the review picker skip the PR" \
   '{"action":"review","repo":"o/shop-api","pr":7,"issue":6}' "$(review)"
 
 # --- heartbeat.sh done ------------------------------------------------------------------------
 reset
 item shop-api 29 "$(hb 50 29 2)"
-recent shop-api "$(hb 40 11 4),$(hb 50 29 2),$(hb 45 12 3 worker claude/issue-12-y),$(hb 46 13 3 worker claude/issue-11-x done),$(hb 47 29 3 reviewer -)"
+recent shop-api "$(hb 40 11 4),$(hb 50 29 2),$(hb 45 12 3 worker claude/issue-12-y),$(hb 46 13 3 worker claude/issue-11-x "done"),$(hb 47 29 3 reviewer -)"
 expect "done refreshes this heartbeat and marks the same branch's other fresh heartbeat done" \
   "$(printf '%s\n%s' 'heartbeat comment 50 (done)' 'heartbeat comment 40 (done)')" \
-  "$(beat o/shop-api 29 worker claude/issue-11-x - done)"
+  "$(beat o/shop-api 29 worker claude/issue-11-x - "done")"
 expect "  only heartbeats 50 and 40 are written (other branch, already done and reviewer untouched)" \
   'PATCH repos/o/shop-api/issues/comments/50;PATCH repos/o/shop-api/issues/comments/40;' "$(writes)"
 
@@ -88,7 +88,7 @@ expect "  one write" 'PATCH repos/o/shop-api/issues/comments/50;' "$(writes)"
 reset
 item shop-api 7
 expect "a reviewer's first done heartbeat is posted; reviewers touch no other comment" \
-  'heartbeat comment 100 (done)' "$(beat o/shop-api 7 reviewer - - done)"
+  'heartbeat comment 100 (done)' "$(beat o/shop-api 7 reviewer - - "done")"
 expect "  one write" 'POST repos/o/shop-api/issues/7/comments;' "$(writes)"
 
 reset
