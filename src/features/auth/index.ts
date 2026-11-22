@@ -7,3 +7,4 @@ export { authKeys, authQueries } from "./queries";
 export { LogoutButton } from "./components/logout-button";
 export { SessionExpiryHandler } from "./components/session-expiry-handler";
 export { useLogout } from "./logout";
+export { CurrentUserProfile } from "./components/current-user-profile";
