@@ -72,6 +72,7 @@ comment is your heartbeat: `heartbeat.sh` keeps editing it.
   It marks every fresh heartbeat of this branch done, so the next worker run (started by a merge
   event) can start at once. A heartbeat left without `done` blocks every other worker for 20
   minutes; that window is only for runs that die mid-task.
+
 - Commit and push after every step (small Conventional Commits), so a later run can resume.
 
 ## 2. Claim the issue and start the heartbeat
