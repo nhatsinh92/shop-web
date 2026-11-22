@@ -12,11 +12,11 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "e2e": "playwright test",
-    "gen:api": "for s in core cart; do pnpm exec openapi-typescript node_modules/@shop/api-contract/openapi/$s.yaml -o src/lib/api/generated/$s.ts && V=$(node -p \"require('@shop/api-contract/package.json').version\") && { printf '// GENERATED from @shop/api-contract %s (openapi/%s.yaml) by `pnpm gen:api`. Do not edit.\\n' \"$V\" $s; cat src/lib/api/generated/$s.ts; } > src/lib/api/generated/$s.tmp && mv src/lib/api/generated/$s.tmp src/lib/api/generated/$s.ts; done"
+    "gen:api": "for s in core cart; do pnpm exec openapi-typescript node_modules/@shop/api-contract/dist/$s.yaml -o src/lib/api/generated/$s.ts && V=$(node -p \"require('@shop/api-contract/package.json').version\") && { printf '// GENERATED from @shop/api-contract %s (dist/%s.yaml) by `pnpm gen:api`. Do not edit.\\n' \"$V\" $s; cat src/lib/api/generated/$s.ts; } > src/lib/api/generated/$s.tmp && mv src/lib/api/generated/$s.tmp src/lib/api/generated/$s.ts; done"
   },
   "dependencies": {
     "@hookform/resolvers": "^7.0.7",
-    "@shop/api-contract": "https://github.com/nhatsinh92/shop-api/releases/download/contract-v0.7.0/shop-api-contract-0.7.0.tgz",
+    "@shop/api-contract": "https://github.com/nhatsinh92/shop-api/releases/download/contract-v1.0.0/shop-api-contract-1.0.0.tgz",
     "@tanstack/query-async-storage-persister": "^5.108.0",
     "@tanstack/react-query": "^5.108.0",
     "@tanstack/react-query-persist-client": "^5.108.0",
