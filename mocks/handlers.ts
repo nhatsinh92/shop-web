@@ -1,6 +1,7 @@
 import { authHandlers } from "./auth-handlers";
 import { cartSummaryFixture } from "./fixtures/cart";
 import { cartHttp } from "./http";
+import { productHandlers } from "./product-handlers";
 
 /**
  * MSW handlers for tests and local mock mode. They use only the typed helpers from ./http, so
@@ -9,4 +10,5 @@ import { cartHttp } from "./http";
 export const handlers = [
   cartHttp.get("/api/cart/summary", ({ response }) => response(200).json(cartSummaryFixture)),
   ...authHandlers,
+  ...productHandlers,
 ];
