@@ -11,6 +11,9 @@
 # shellcheck disable=SC2034 # variables below are used by the scripts that source this file
 US=$'\x1f' # row field separator: not whitespace, so `read` keeps empty fields
 STALE_MINUTES=${HEARTBEAT_STALE_MINUTES:-20}
+# A heartbeat whose run has ended (`heartbeat.sh ... done`). It no longer counts as an active agent,
+# so the next run can start at once instead of waiting STALE_MINUTES.
+DONE_MARKER='<!-- shop-agent:done -->'
 
 default_repos() {
   local url owner
@@ -91,14 +94,16 @@ check_state() {
   api "repos/$1/commits/$2/check-runs?per_page=100" "$JQ_CHECKS"
 }
 
-# jq over issue comments: "<issue number><US><age minutes>" for fresh heartbeats of a role.
+# jq over issue comments: "<issue number><US><age minutes>" for fresh heartbeats of a role
+# (heartbeats marked done are not fresh).
 fresh_heartbeats_jq() {
-  printf '.[] | select(.body | test("<!-- shop-agent:heartbeat role=%s ")) | ((now - (.updated_at | fromdateiso8601)) / 60 | floor) as $age | select($age < %s) | [(.issue_url | split("/") | last), $age] | map(tostring) | join("\\u001f")' "$1" "$STALE_MINUTES"
+  printf '.[] | select(.body | test("<!-- shop-agent:heartbeat role=%s ")) | select(.body | contains("<!-- shop-agent:done -->") | not) | ((now - (.updated_at | fromdateiso8601)) / 60 | floor) as $age | select($age < %s) | [(.issue_url | split("/") | last), $age] | map(tostring) | join("\\u001f")' "$1" "$STALE_MINUTES"
 }
 
-# jq over issue comments: "<comment id><US><issue number>" for fresh heartbeats of a role.
+# jq over issue comments: "<comment id><US><issue number>" for fresh heartbeats of a role
+# (heartbeats marked done are not fresh).
 fresh_heartbeat_ids_jq() {
-  printf '.[] | select(.body | test("<!-- shop-agent:heartbeat role=%s ")) | select(((now - (.updated_at | fromdateiso8601)) / 60) < %s) | [.id, (.issue_url | split("/") | last)] | map(tostring) | join("\\u001f")' "$1" "$STALE_MINUTES"
+  printf '.[] | select(.body | test("<!-- shop-agent:heartbeat role=%s ")) | select(.body | contains("<!-- shop-agent:done -->") | not) | select(((now - (.updated_at | fromdateiso8601)) / 60) < %s) | [.id, (.issue_url | split("/") | last)] | map(tostring) | join("\\u001f")' "$1" "$STALE_MINUTES"
 }
 
 # gh_write <METHOD> <path> [gh api args...]: a mutating REST call. In fixture mode it is logged to

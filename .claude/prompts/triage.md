@@ -25,5 +25,7 @@ English. GitHub access is REST only: `T="bash /home/user/shop-api/scripts/gh-tas
    **Owner decision needed:** <the exact question>
    ```
 4. `$T labels $R $N add blocked`, then `$T labels $R $N remove in-progress ready`.
-5. End the run with a one-line summary. Do not create the proposed issues yourself; the owner
+5. Mark your heartbeat done so the next worker run is not blocked:
+   `bash /home/user/shop-api/scripts/heartbeat.sh $R $N worker claude/issue-$N - done <<<"Triaged: owner decision needed"`.
+6. End the run with a one-line summary. Do not create the proposed issues yourself; the owner
    decides (or asks the planner).

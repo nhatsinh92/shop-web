@@ -60,7 +60,18 @@ comment is your heartbeat: `heartbeat.sh` keeps editing it.
   tests; CI fails if any test is skipped there.
 - When the issue is unclear, contradicts the contract, the epic or the design, or needs something
   outside its scope: **stop and comment** on the issue (what is unclear, the options, what you
-  need), add the `blocked` label, refresh the heartbeat with the reason, and end. Do not guess.
+  need), add the `blocked` label, refresh the heartbeat with the reason and `done`, and end. Do not
+  guess.
+- **Every run that claimed work ends with a `done` heartbeat**, whichever way it ends (finished,
+  blocked, CI still red, nothing to change, triage). Pass `done` as the sixth argument:
+
+  ```bash
+  bash /home/user/shop-api/scripts/heartbeat.sh $R <issue or PR> worker <branch> - done <<<"<Done / Next>"
+  ```
+
+  It marks every fresh heartbeat of this branch done, so the next worker run (started by a merge
+  event) can start at once. A heartbeat left without `done` blocks every other worker for 20
+  minutes; that window is only for runs that die mid-task.
 - Commit and push after every step (small Conventional Commits), so a later run can resume.
 
 ## 2. Claim the issue and start the heartbeat
@@ -130,7 +141,7 @@ $T failed-logs $R $P        # when failing
 `merge-gate` stays red until the reviewer adds `agent-approved` (and the owner `human-approved` for
 sensitive paths); it is excluded from `checks-wait`, do not try to fix it. Fix every other failing
 check, push and wait again (up to three rounds). If it is still red, comment on the PR with what
-you tried and end without adding `review`. If `auto-merge` failed, say so in the PR comment; the
+you tried, write the `done` heartbeat and end without adding `review`. If `auto-merge` failed, say so in the PR comment; the
 owner can enable it.
 
 When `checks-wait` exits 0, hand the PR to the reviewer:
@@ -155,7 +166,8 @@ What to do depends on `why`:
 - `changes-requested`: address each numbered change from the review.
 - `checks`: fix each failing check (never by weakening a test or a check).
 - `needs-review`: checks are green but the PR was never handed over. Run `$T checks-wait $R $P`;
-  when it exits 0, `$T labels $R $P add review` and end the run (nothing to change).
+  when it exits 0, `$T labels $R $P add review`, write the `done` heartbeat and end the run
+  (nothing to change).
 - `conflict`: the branch conflicts with `main`. Merge, do not rebase (rebasing would need a force
   push, which is not allowed):
 
@@ -180,5 +192,11 @@ Wait for the checks as in section 4, and add `review` only when `checks-wait` ex
 
 ## 6. End of the run
 
-Refresh the heartbeat one last time with Done / Next and the PR link. End with a short summary:
+Refresh the heartbeat one last time with Done / Next, the PR link and `done`:
+
+```bash
+bash /home/user/shop-api/scripts/heartbeat.sh $R $P worker <branch> - done <<<"<Done / Next, PR link>"
+```
+
+End with a short summary:
 issue, PR, check status, anything blocked.
