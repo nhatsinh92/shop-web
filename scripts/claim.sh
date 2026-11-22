@@ -13,6 +13,14 @@
 #   {"action":"error","reason":"..."}               exit 1: GitHub could not be read or written
 #
 # A run that loses deletes the heartbeat comment it created (a refreshed one is left as it was).
+#
+# Runs on the same issue or PR can share one heartbeat comment (each refreshes the existing one), so
+# comparing comment ids cannot tell them apart. Two more rules cover that case:
+#   - an existing heartbeat that is fresh and not marked done means a worker is active on this
+#     item: the run ends at once without writing anything;
+#   - every run writes a unique claim marker into the heartbeat; after the wait, a run whose marker
+#     was overwritten by another run lost (the last writer wins) and leaves the comment alone.
+# CLAIM_RUN_ID overrides the generated run id (tests).
 set -euo pipefail
 
 here=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
@@ -24,16 +32,27 @@ repo=${1:?repo}
 number=${2:?issue or PR number}
 branch=${3:?branch}
 wait_seconds=${CLAIM_WAIT_SECONDS:-15}
+run_id=${CLAIM_RUN_ID:-$(date -u +%s%N)-$$-$RANDOM}
 
 body="<!-- shop-agent:heartbeat role=worker branch=$branch -->
+<!-- shop-agent:claim run=$run_id -->
 **Worker progress** · branch \`$branch\` · updated $(date -u +%Y-%m-%dT%H:%M:%SZ)
 
 Claiming this task (waiting ${wait_seconds}s for other worker runs that started at the same time)."
 
-existing=$(api "repos/$repo/issues/$number/comments?per_page=100" \
-  '[.[] | select(.body | startswith("<!-- shop-agent:heartbeat role=worker "))] | last | .id // empty') ||
+existing_jq='[.[] | select(.body | startswith("<!-- shop-agent:heartbeat role=worker "))] | last
+  | if . == null then empty else
+      [.id, (.body | contains("'"$DONE_MARKER"'")), ((now - (.updated_at | fromdateiso8601)) / 60 | floor)]
+      | map(tostring) | join("\u001f") end'
+existing_row=$(api "repos/$repo/issues/$number/comments?per_page=100" "$existing_jq") ||
   die_api "comments of $repo#$number"
-existing=${existing%%$'\n'*}
+IFS=$US read -r existing existing_done existing_age <<<"${existing_row##*$'\n'}"
+
+if [[ -n $existing && $existing_done == false ]] && ((existing_age < STALE_MINUTES)); then
+  printf '{"claimed":false,"reason":"another worker is active: %s#%s (heartbeat comment %s)"}\n' \
+    "$repo" "$number" "$existing"
+  exit 3
+fi
 
 if [[ -n $existing ]]; then
   mine=$existing
@@ -49,6 +68,17 @@ fi
 sleep "$wait_seconds"
 
 since=$(minutes_ago "$STALE_MINUTES")
+
+# Another run on the same item may have refreshed the same comment after this run did.
+owner_run=$(api "repos/$repo/issues/comments?since=$since&per_page=100" \
+  "[.[] | select(.id == $mine) | .body | capture(\"<!-- shop-agent:claim run=(?<run>[^ ]+) -->\").run] | first // empty") ||
+  die_api "recent comments of $repo"
+if [[ -n $owner_run && $owner_run != "$run_id" ]]; then
+  printf '{"claimed":false,"reason":"another worker run claimed %s#%s at the same time (heartbeat comment %s)"}\n' \
+    "$repo" "$number" "$mine"
+  exit 3
+fi
+
 older=""
 for r in "${REPOS[@]}"; do
   out=$(api "repos/$r/issues/comments?since=$since&per_page=100" "$(fresh_heartbeat_ids_jq worker)") ||
