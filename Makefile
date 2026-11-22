@@ -5,7 +5,7 @@ SHELL := bash
 .DEFAULT_GOAL := help
 PORT ?= 3000
 
-.PHONY: help install test lint build demo e2e dev-mock test-scripts
+.PHONY: help install test lint build demo e2e dev-mock test-scripts check-api
 
 help: ## Show targets
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-10s %s\n", $$1, $$2}'
@@ -33,6 +33,10 @@ e2e: build ## Playwright smoke + axe against the production build
 
 dev-mock: node_modules ## Dev server with MSW answering /api/* (no backend needed)
 	NEXT_PUBLIC_API_MOCKING=enabled pnpm exec next dev -p $(PORT)
+
+check-api: node_modules ## Regenerate API types and fail when src/lib/api/generated differs from the commit
+	pnpm gen:api
+	git diff --exit-code -- src/lib/api/generated
 
 test-scripts: ## Tests for the orchestration scripts (needs jq)
 	bash scripts/tests/picker.test.sh

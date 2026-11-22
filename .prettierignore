@@ -6,5 +6,6 @@ test-results
 pnpm-lock.yaml
 public/mockServiceWorker.js
 design
+src/lib/api/generated
 docs/handoff
 src/app/shadcn-tailwind.css

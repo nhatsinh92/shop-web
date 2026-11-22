@@ -28,6 +28,8 @@ jobs:
           node-version: "22"
           cache: pnpm
       - run: make install
+      - name: API types match the pinned contract
+        run: make check-api
       - name: Lint (ESLint boundaries, TanStack Query, no raw hex), types, Prettier
         run: make lint
       - name: Unit and component tests with coverage
