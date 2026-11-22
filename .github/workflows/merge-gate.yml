@@ -2,11 +2,13 @@
 # The policy script runs from the PR's base commit so a PR cannot weaken its own gate.
 name: merge-gate
 
+# Pull request events only. The policy reads labels, not reviews, and every label change already
+# triggers `pull_request` (labeled / unlabeled). A `pull_request_review` trigger ran in its own check
+# suite: its failed run stayed on the required check after a newer `pull_request` run passed, so
+# adding `human-approved` after the agent review did not unblock the merge (shop-web#19).
 on:
   pull_request:
     types: [opened, synchronize, reopened, labeled, unlabeled]
-  pull_request_review:
-    types: [submitted, edited, dismissed]
 
 permissions:
   contents: read
