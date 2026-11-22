@@ -2,6 +2,9 @@ import { defineConfig, devices } from "@playwright/test";
 
 const port = Number(process.env.PORT ?? 3000);
 const baseURL = process.env.E2E_BASE_URL ?? `http://localhost:${port}`;
+// Stub gateway for the auth journeys; the app talks to it for /api/* and the proxy refresh.
+const stubPort = Number(process.env.E2E_STUB_PORT ?? 4010);
+const stubUrl = `http://localhost:${stubPort}`;
 
 // End-to-end tests run against a production build (`next start`), so prerendering, streaming
 // and caching behave as in production. Screenshots are taken at desktop and phone width.
@@ -21,10 +24,20 @@ export default defineConfig({
   ],
   webServer: process.env.E2E_BASE_URL
     ? undefined
-    : {
-        command: `pnpm exec next start -p ${port}`,
-        url: baseURL,
-        reuseExistingServer: !process.env.CI,
-        timeout: 60_000,
-      },
+    : [
+        {
+          command: "node e2e/support/stub-gateway.ts",
+          url: `${stubUrl}/__stub/health`,
+          reuseExistingServer: !process.env.CI,
+          env: { E2E_STUB_PORT: String(stubPort) },
+          timeout: 30_000,
+        },
+        {
+          command: `pnpm exec next start -p ${port}`,
+          url: baseURL,
+          reuseExistingServer: !process.env.CI,
+          env: { GATEWAY_URL: stubUrl, CORE_INTERNAL_URL: stubUrl, CART_INTERNAL_URL: stubUrl },
+          timeout: 60_000,
+        },
+      ],
 });

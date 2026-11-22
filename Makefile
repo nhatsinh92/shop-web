@@ -4,6 +4,7 @@ SHELL := bash
 .SHELLFLAGS := -eu -o pipefail -c
 .DEFAULT_GOAL := help
 PORT ?= 3000
+E2E_STUB_PORT ?= 4010
 
 .PHONY: help install test lint build demo e2e dev-mock test-scripts check-api
 
@@ -29,8 +30,11 @@ build: node_modules ## Production build
 demo: build ## Production build + next start on http://localhost:$(PORT) (/api/* -> gateway :8080)
 	pnpm exec next start -p $(PORT)
 
-e2e: build ## Playwright smoke + axe against the production build
-	pnpm e2e
+# rewrites() in next.config.ts is resolved at build time, so the e2e build must see GATEWAY_URL.
+e2e: node_modules ## Playwright smoke, auth journeys and axe against a build wired to a stub gateway
+	GATEWAY_URL=http://localhost:$(E2E_STUB_PORT) pnpm build
+	node scripts/check-static-shell.mjs
+	E2E_STUB_PORT=$(E2E_STUB_PORT) pnpm e2e
 
 dev-mock: node_modules ## Dev server with MSW answering /api/* (no backend needed)
 	NEXT_PUBLIC_API_MOCKING=enabled pnpm exec next dev -p $(PORT)
