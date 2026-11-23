@@ -1,8 +1,10 @@
 import { act, render, screen } from "@testing-library/react";
+import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createFlashSale } from "../../../../mocks/fixtures/products";
 import { getCurrentFlashSale } from "../catalog.server";
+import { FlashSaleCountdown } from "./flash-sale-countdown";
 import { FlashSaleSection, stockLine } from "./flash-sale-section";
 
 vi.mock("../catalog.server", () => ({ getCurrentFlashSale: vi.fn() }));
@@ -41,7 +43,7 @@ describe("FlashSaleSection", () => {
     expect(screen.queryByText("Kết thúc sau")).not.toBeInTheDocument();
   });
 
-  it("shows a static label before mount-time ticking and counts down after mount", async () => {
+  it("counts down from the sale end time after mount", async () => {
     const sale = createFlashSale(NOW); // ends in 2 hours
     vi.mocked(getCurrentFlashSale).mockResolvedValue(sale);
     await renderSection();
@@ -52,6 +54,17 @@ describe("FlashSaleSection", () => {
       vi.advanceTimersByTime(61_000);
     });
     expect(screen.getByRole("timer")).toHaveTextContent("01:58:59");
+  });
+
+  it("renders a static --:--:-- label on the server, before any clock runs", () => {
+    const html = renderToString(
+      <FlashSaleCountdown endsAt={new Date(NOW.getTime() + 7_200_000).toISOString()} action={null}>
+        <div />
+      </FlashSaleCountdown>,
+    );
+    expect(html).toContain("Kết thúc sau");
+    expect(html.match(/--/g)).toHaveLength(3);
+    expect(html.replace(/<[^>]*>/g, "")).not.toMatch(/\d/);
   });
 
   it("hides the section when the countdown reaches zero", async () => {
