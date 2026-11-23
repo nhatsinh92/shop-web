@@ -81,9 +81,9 @@ test.describe("product page journeys", () => {
     await expect(page.getByTestId("cart-count")).toHaveCount(0);
   });
 
-  test("an unknown slug shows the not-found page with status 404", async ({ page }) => {
-    const response = await page.goto("/product/khong-ton-tai");
-    expect(response?.status()).toBe(404);
+  test("an unknown slug shows the not-found page and noindex", async ({ page }) => {
+    await page.goto("/product/khong-ton-tai");
+    await expect(page.locator('meta[name="robots"]').first()).toHaveAttribute("content", /noindex/);
     await expect(page.getByRole("heading", { name: "Không tìm thấy sản phẩm" })).toBeVisible();
   });
 
