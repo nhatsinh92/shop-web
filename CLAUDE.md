@@ -48,7 +48,9 @@ comments, PRs, checks (`checks-wait`, `failed-logs`) and auto-merge, or `gh api 
 ```
 src/app/                    routes only; composes features. (shop)/layout.tsx, (shop)/page.tsx
 src/features/<name>/
-  index.ts                  the feature's only public entry (explicit named exports, no export *)
+  index.ts                  the feature's public entry (explicit named exports, no export *)
+  client.ts                 optional client-safe entry: hooks client components in app/ need; never
+                            reaches *.server.ts or server-only code
   api.ts                    browser calls to /api/* (through the gateway, never a route handler)
   queries.ts                query key factory (<name>Keys) + queryOptions() factories
   <thing>.schema.ts         Zod schemas and inferred types
@@ -68,7 +70,7 @@ into `src/features/site-header` by `src/app/(shop)/layout.tsx`. Copy this shape.
 Boundaries (enforced by `eslint-plugin-boundaries`):
 
 - Features never import other features. `app/` composes them (pass components as props/slots).
-- `app/` imports a feature only through its `index.ts`.
+- `app/` imports a feature only through its `index.ts` (or `client.ts` from a client component).
 - Features may import `components/ui` and `lib`; `components/ui` imports only `lib`.
 - Files are 150–400 lines, named descriptively (`product-form.tsx`, `product.schema.ts`).
 
