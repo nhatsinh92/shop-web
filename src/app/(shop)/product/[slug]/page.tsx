@@ -3,6 +3,8 @@ import { Suspense } from "react";
 import {
   getProductBySlug,
   listStaticProductSlugs,
+  MemberPrice,
+  MemberPriceSkeleton,
   PriceBox,
   PriceBoxSkeleton,
   ProductBreadcrumb,
@@ -16,7 +18,8 @@ import {
 } from "@/features/catalog";
 
 // Product page: STATIC (generateStaticParams / ISR) for breadcrumb, gallery, heading and
-// description; CACHE (hours) for similar products. Reads no cookies, headers or searchParams.
+// description; CACHE (hours) for similar products; STREAM for the member price (reads cookies
+// inside its own Suspense). Reads no cookies, headers or searchParams.
 // Slugs not returned below render on first request; an unknown slug calls notFound().
 export async function generateStaticParams() {
   return (await listStaticProductSlugs()).map((slug) => ({ slug }));
@@ -59,6 +62,9 @@ export default async function ProductPage({ params }: PageProps<"/product/[slug]
           />
           <div className="flex min-w-0 flex-col gap-6">
             <ProductHeading brand={product.brand} name={product.name} />
+            <Suspense fallback={<MemberPriceSkeleton />}>
+              <MemberPrice slug={slug} />
+            </Suspense>
             <PurchasePanel variants={pickerVariants} priceBoxes={priceBoxes} />
             <ProductServiceInfo />
           </div>

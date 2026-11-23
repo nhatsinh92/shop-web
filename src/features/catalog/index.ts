@@ -32,3 +32,5 @@ export {
   SelectedGallery,
   useProductSelection,
 } from "./components/purchase-panel";
+export { MemberPrice } from "./components/member-price";
+export { MemberPriceSkeleton } from "./components/member-price-skeleton";
