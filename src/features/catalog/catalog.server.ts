@@ -89,19 +89,23 @@ export async function getSimilarProducts(product: ProductDetail): Promise<Produc
   cacheLife("hours");
   cacheTag("products");
 
-  // A leaf category can hold too few products (the ANC Pro is alone in its own), so the rest of
-  // the parent category fills the list; listProducts includes subcategories. Leaf products come
-  // first. The parent list is read before the leaf list, which takes precedence when merging.
-  const parent = product.category.path.at(-2)?.slug;
-  const wider = parent ? await listCategory(parent, PARENT_FETCH_LIMIT) : [];
-  const leaf = await listCategory(product.category.slug, SIMILAR_FETCH_LIMIT);
-
+  // A leaf category can hold too few products (the ANC Pro is alone in its own). The leaf is listed
+  // first; only when fewer than five others remain is the parent category listed (listProducts
+  // includes subcategories). Leaf products come first.
   const seen = new Set([product.slug]);
   const similar: ProductSummary[] = [];
-  for (const item of [...leaf, ...wider]) {
-    if (seen.has(item.slug)) continue;
-    seen.add(item.slug);
-    similar.push(item);
+  const add = (items: ProductSummary[]) => {
+    for (const item of items) {
+      if (seen.has(item.slug)) continue;
+      seen.add(item.slug);
+      similar.push(item);
+    }
+  };
+
+  add(await listCategory(product.category.slug, SIMILAR_FETCH_LIMIT));
+  const parent = product.category.path.at(-2)?.slug;
+  if (similar.length < SIMILAR_SHOWN && parent) {
+    add(await listCategory(parent, PARENT_FETCH_LIMIT));
   }
   return similar.slice(0, SIMILAR_SHOWN);
 }

@@ -54,7 +54,7 @@ describe("getSimilarProducts with the parent category (#75)", () => {
     expect(similar.map((p) => p.slug)).toEqual([a, b, c, d, e].map((p) => p!.slug));
   });
 
-  it("asks the leaf and the parent category through listProducts", async () => {
+  it("asks the leaf first and then the parent category when the leaf is not enough", async () => {
     const categories: (string | null)[] = [];
     server.events.on("request:start", ({ request }) => {
       categories.push(new URL(request.url).searchParams.get("category"));
@@ -63,7 +63,25 @@ describe("getSimilarProducts with the parent category (#75)", () => {
     await getSimilarProducts(ancPro);
     server.events.removeAllListeners();
 
-    expect(new Set(categories)).toEqual(new Set(ancPro.category.path.map((c) => c.slug)));
+    expect(categories).toEqual([ancPro.category.slug, ancPro.category.path.at(-2)!.slug]);
+  });
+
+  it("makes exactly one request, for the leaf, when the leaf has five other products", async () => {
+    server.use(
+      http.get(`${CORE}/api/products`, () =>
+        HttpResponse.json({ items: productSummaryFixtures.slice(0, 6), nextCursor: null }),
+      ),
+    );
+    const categories: (string | null)[] = [];
+    server.events.on("request:start", ({ request }) => {
+      categories.push(new URL(request.url).searchParams.get("category"));
+    });
+
+    const similar = await getSimilarProducts({ ...ancPro, slug: "not-in-any-list" });
+    server.events.removeAllListeners();
+
+    expect(similar).toHaveLength(5);
+    expect(categories).toEqual([ancPro.category.slug]);
   });
 
   it("uses only the leaf category for a product at the root", async () => {
