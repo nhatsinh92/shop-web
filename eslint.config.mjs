@@ -56,8 +56,11 @@ export default defineConfig([
             },
             {
               from: { element: { type: "app" } },
-              allow: { to: { element: { type: "feature", fileInternalPath: "index.ts" } } },
-              message: "app/ may import a feature only through its index.ts",
+              // index.ts is the public entry; client.ts the client-safe entry (no server code).
+              allow: {
+                to: { element: { type: "feature", fileInternalPath: ["index.ts", "client.ts"] } },
+              },
+              message: "app/ may import a feature only through its index.ts or client.ts",
             },
             {
               from: { element: { type: "feature" } },
