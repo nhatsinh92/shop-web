@@ -18,3 +18,9 @@ export type {
   ProductDetail,
   ProductSummary,
 } from "./catalog.server";
+export { ProductBreadcrumb } from "./components/product-breadcrumb";
+export { ProductGallery } from "./components/product-gallery";
+export { ProductHeading } from "./components/product-heading";
+export { ProductDescription } from "./components/product-description";
+export { ProductServiceInfo } from "./components/product-service-info";
+export { SimilarProducts } from "./components/similar-products";

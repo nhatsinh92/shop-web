@@ -1,4 +1,4 @@
-// Fails unless "/" is listed as prerendered, so CI notices when the shell becomes dynamic.
+// Fails unless "/" and a seeded product route are listed as prerendered, so CI notices when the shell becomes dynamic.
 import { readFileSync } from "node:fs";
 
 const file = ".next/prerender-manifest.json";
@@ -15,4 +15,10 @@ if (!routes.includes("/")) {
   console.error('check-static-shell: "/" is not prerendered; the shell became dynamic.');
   process.exit(1);
 }
-console.log('check-static-shell: "/" is prerendered.');
+// The seeded ANC Pro product page (slug from the fixtures of #52) must be prerendered too.
+const productRoute = "/product/tai-nghe-khong-day-anc-pro";
+if (!routes.includes(productRoute)) {
+  console.error(`check-static-shell: "${productRoute}" is not prerendered.`);
+  process.exit(1);
+}
+console.log(`check-static-shell: "/" and "${productRoute}" are prerendered.`);
