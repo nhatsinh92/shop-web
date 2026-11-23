@@ -17,6 +17,8 @@ import {
   SimilarProducts,
 } from "@/features/catalog";
 
+import { AddToCart } from "./add-to-cart";
+
 // Product page: STATIC (generateStaticParams / ISR) for breadcrumb, gallery, heading and
 // description; CACHE (hours) for similar products; STREAM for the member price (reads cookies
 // inside its own Suspense). Reads no cookies, headers or searchParams.
@@ -65,7 +67,11 @@ export default async function ProductPage({ params }: PageProps<"/product/[slug]
             <Suspense fallback={<MemberPriceSkeleton />}>
               <MemberPrice slug={slug} />
             </Suspense>
-            <PurchasePanel variants={pickerVariants} priceBoxes={priceBoxes} />
+            <PurchasePanel
+              variants={pickerVariants}
+              priceBoxes={priceBoxes}
+              addToCartSlot={<AddToCart />}
+            />
             <ProductServiceInfo />
           </div>
         </section>
