@@ -23,8 +23,10 @@ test: node_modules ## Unit and component tests (Vitest + Testing Library + MSW)
 lint: node_modules ## ESLint (feature boundaries, TanStack Query, no raw hex), tsc, Prettier
 	pnpm lint
 
-build: node_modules ## Production build
-	pnpm build
+# next build prerenders cached product data: with CORE_INTERNAL_URL unset it runs against the
+# fixture core (scripts/fixture-core.ts); set CORE_INTERNAL_URL to build against a real core.
+build: node_modules ## Production build (fixture core unless CORE_INTERNAL_URL is set)
+	bash scripts/with-fixture-core.sh pnpm build
 	node scripts/check-static-shell.mjs
 
 demo: build ## Production build + next start on http://localhost:$(PORT) (/api/* -> gateway :8080)
@@ -32,7 +34,7 @@ demo: build ## Production build + next start on http://localhost:$(PORT) (/api/*
 
 # rewrites() in next.config.ts is resolved at build time, so the e2e build must see GATEWAY_URL.
 e2e: node_modules ## Playwright smoke, auth journeys and axe against a build wired to a stub gateway
-	GATEWAY_URL=http://localhost:$(E2E_STUB_PORT) pnpm build
+	GATEWAY_URL=http://localhost:$(E2E_STUB_PORT) bash scripts/with-fixture-core.sh pnpm build
 	node scripts/check-static-shell.mjs
 	E2E_STUB_PORT=$(E2E_STUB_PORT) pnpm e2e
 
@@ -48,3 +50,5 @@ test-scripts: ## Tests for the orchestration scripts (needs jq)
 	bash scripts/tests/claim.test.sh
 	bash scripts/tests/claim-shared-heartbeat.test.sh
 	bash scripts/tests/heartbeat.test.sh
+	node --test scripts/tests/fixture-core.test.ts
+	bash scripts/tests/with-fixture-core.test.sh
