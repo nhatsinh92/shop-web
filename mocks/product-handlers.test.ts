@@ -18,7 +18,7 @@ function get(path: string, init?: RequestInit): Promise<Response> {
   return fetch(`${base}${path}`, init);
 }
 
-const ancSlug = "tai-nghe-anc-pro";
+const ancSlug = "tai-nghe-khong-day-anc-pro";
 
 describe("product fixtures", () => {
   it("has the ten products with matching summaries and the seed categories", () => {
@@ -27,6 +27,28 @@ describe("product fixtures", () => {
       productDetailFixtures.map((p) => p.sku),
     );
     expect(categoryFixtures.map((c) => c.slug)).toContain("am-thanh");
+  });
+
+  it("ANC Pro id, slug and three SKUs match seed/products.sql", () => {
+    const anc = productDetailFixtures.find((p) => p.slug === ancSlug);
+    expect(anc?.id).toBe("00000000-0000-4000-8000-000000000001");
+    expect(anc?.variants.map((v) => v.sku)).toEqual([
+      "SKU-ANC-PRO-BLK",
+      "SKU-ANC-PRO-WHT",
+      "SKU-ANC-PRO-BLU",
+    ]);
+    expect(productDetailFixtures.map((p) => p.sku)).toEqual([
+      "SKU-ANC-PRO-BLK",
+      "SKU-AIRFRY-6L",
+      "SKU-JACKET-WP",
+      "SKU-KB-75",
+      "SKU-BOTTLE-750",
+      "SKU-MOUSE-SIL",
+      "SKU-STAND-AL",
+      "SKU-SLEEVE-14",
+      "SKU-LAMP-LED",
+      "SKU-PAD-90",
+    ]);
   });
 
   it("ANC Pro matches the seed numbers: 1 290 000, list 1 790 000, sale 890 000, LOW / 40, GOLD 845 500", async () => {
@@ -121,8 +143,8 @@ describe("product MSW handlers", () => {
   });
 
   it("getProductAvailability answers per SKU and 404 for an unknown SKU", async () => {
-    const ok = await get("/api/products/SKU-ANC-BLK/availability");
-    expect(await ok.json()).toEqual(availabilityFixtures["SKU-ANC-BLK"]);
+    const ok = await get("/api/products/SKU-ANC-PRO-BLK/availability");
+    expect(await ok.json()).toEqual(availabilityFixtures["SKU-ANC-PRO-BLK"]);
     const missing = await get("/api/products/NOPE/availability");
     expect(missing.status).toBe(404);
   });
@@ -139,7 +161,7 @@ describe("product MSW handlers", () => {
     });
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({
-      sku: "SKU-ANC-BLK",
+      sku: "SKU-ANC-PRO-BLK",
       memberTier: "GOLD",
       price: { amount: 845_500, currency: "VND" },
     });
@@ -176,9 +198,9 @@ describe("product MSW overrides", () => {
 
   it("outOfStock answers OUT_OF_STOCK without approxQuantity", async () => {
     server.use(productOverrides.outOfStock);
-    const res = await get("/api/products/SKU-ANC-BLK/availability");
+    const res = await get("/api/products/SKU-ANC-PRO-BLK/availability");
     expect(await res.json()).toEqual({
-      sku: "SKU-ANC-BLK",
+      sku: "SKU-ANC-PRO-BLK",
       price: { amount: 890_000, currency: "VND" },
       stockLevel: "OUT_OF_STOCK",
     });

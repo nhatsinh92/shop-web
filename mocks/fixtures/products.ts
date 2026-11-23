@@ -22,22 +22,20 @@ function ref(slug: string, name: string): Schemas["CategoryRef"] {
 }
 
 const electronics = ref("dien-tu", "Điện tử");
+const homeGoods = ref("gia-dung", "Gia dụng");
 const fashion = ref("thoi-trang", "Thời trang");
-const home = ref("nha-cua", "Nhà cửa");
 
 function leaf(parent: Schemas["CategoryRef"], slug: string, name: string): Category {
   return { slug, name, path: [parent, ref(slug, name)] };
 }
 
-/** Root categories (path of one) followed by the leaf categories the products belong to. */
+/** Root categories (path of one) followed by the leaf categories, as in `seed/products.sql`. */
 export const categoryFixtures: Category[] = [
   { ...electronics, path: [electronics] },
+  { ...homeGoods, path: [homeGoods] },
   { ...fashion, path: [fashion] },
-  { ...home, path: [home] },
   leaf(electronics, "am-thanh", "Âm thanh"),
   leaf(electronics, "phu-kien-may-tinh", "Phụ kiện máy tính"),
-  leaf(fashion, "ao-khoac", "Áo khoác"),
-  leaf(home, "do-gia-dung", "Đồ gia dụng"),
 ];
 
 function category(slug: string): Category {
@@ -65,19 +63,19 @@ interface Seed {
 const seeds: Seed[] = [
   {
     n: 1,
-    sku: "SKU-ANC-BLK",
-    slug: "tai-nghe-anc-pro",
+    sku: "SKU-ANC-PRO-BLK",
+    slug: "tai-nghe-khong-day-anc-pro",
     name: "Tai nghe không dây chống ồn ANC Pro",
-    brand: "Sonic",
+    brand: "Mây Audio",
     category: "am-thanh",
     price: 1_290_000,
     listPrice: 1_790_000,
     stock: 40,
     sale: { price: 890_000, sold: 82 },
     variants: [
-      { sku: "SKU-ANC-BLK", color: "Đen nhám" },
-      { sku: "SKU-ANC-WHT", color: "Trắng sứ" },
-      { sku: "SKU-ANC-BLU", color: "Xanh đêm" },
+      { sku: "SKU-ANC-PRO-BLK", color: "Đen nhám" },
+      { sku: "SKU-ANC-PRO-WHT", color: "Trắng sứ" },
+      { sku: "SKU-ANC-PRO-BLU", color: "Xanh đêm" },
     ],
   },
   {
@@ -85,8 +83,8 @@ const seeds: Seed[] = [
     sku: "SKU-AIRFRY-6L",
     slug: "noi-chien-khong-dau-6l",
     name: "Nồi chiên không dầu 6L màn hình cảm ứng",
-    brand: "Kitchen+",
-    category: "do-gia-dung",
+    brand: "Mây Home",
+    category: "gia-dung",
     price: 1_690_000,
     listPrice: 2_150_000,
     stock: 60,
@@ -94,11 +92,11 @@ const seeds: Seed[] = [
   },
   {
     n: 3,
-    sku: "SKU-JACKET-UNI",
-    slug: "ao-khoac-gio-unisex",
+    sku: "SKU-JACKET-WP",
+    slug: "ao-khoac-gio-unisex-chong-nuoc",
     name: "Áo khoác gió unisex chống nước",
-    brand: "Wind",
-    category: "ao-khoac",
+    brand: "Mây Wear",
+    category: "thoi-trang",
     price: 459_000,
     listPrice: 599_000,
     stock: 200,
@@ -106,10 +104,10 @@ const seeds: Seed[] = [
   },
   {
     n: 4,
-    sku: "SKU-KEYB-75",
+    sku: "SKU-KB-75",
     slug: "ban-phim-co-75-hot-swap",
     name: "Bàn phím cơ 75% hot-swap",
-    brand: "Keyra",
+    brand: "Mây Gear",
     category: "phu-kien-may-tinh",
     price: 1_390_000,
     listPrice: 1_690_000,
@@ -118,11 +116,11 @@ const seeds: Seed[] = [
   },
   {
     n: 5,
-    sku: "SKU-FLASK-750",
+    sku: "SKU-BOTTLE-750",
     slug: "binh-giu-nhiet-inox-750ml",
     name: "Bình giữ nhiệt inox 750ml",
-    brand: "Thermo",
-    category: "do-gia-dung",
+    brand: "Mây Home",
+    category: "gia-dung",
     price: 249_000,
     listPrice: 320_000,
     stock: 300,
@@ -133,74 +131,78 @@ const seeds: Seed[] = [
     sku: "SKU-MOUSE-SIL",
     slug: "chuot-khong-day-im-lang",
     name: "Chuột không dây im lặng",
-    brand: "Keyra",
+    brand: "Mây Gear",
     category: "phu-kien-may-tinh",
     price: 249_000,
     stock: 150,
   },
   {
     n: 7,
-    sku: "SKU-STAND-ALU",
+    sku: "SKU-STAND-AL",
     slug: "gia-do-laptop-nhom",
     name: "Giá đỡ laptop nhôm",
-    brand: "Deskly",
+    brand: "Mây Gear",
     category: "phu-kien-may-tinh",
     price: 319_000,
-    stock: 120,
+    stock: 80,
   },
   {
     n: 8,
     sku: "SKU-SLEEVE-14",
     slug: "tui-chong-soc-14-inch",
     name: "Túi chống sốc 14 inch",
-    brand: "Deskly",
+    brand: "Mây Gear",
     category: "phu-kien-may-tinh",
     price: 199_000,
-    stock: 180,
+    stock: 90,
   },
   {
     n: 9,
     sku: "SKU-LAMP-LED",
     slug: "den-ban-led-chong-can",
     name: "Đèn bàn LED chống cận",
-    brand: "Lumi",
-    category: "do-gia-dung",
+    brand: "Mây Home",
+    category: "gia-dung",
     price: 459_000,
-    stock: 90,
+    stock: 70,
   },
   {
     n: 10,
     sku: "SKU-PAD-90",
     slug: "lot-chuot-co-lon-90cm",
     name: "Lót chuột cỡ lớn 90cm",
-    brand: "Deskly",
+    brand: "Mây Gear",
     category: "phu-kien-may-tinh",
     price: 129_000,
     stock: 250,
   },
 ];
 
-function uuid(kind: number, n: number): string {
-  return `00000000-0000-4000-8000-${String(kind).padStart(4, "0")}${String(n).padStart(8, "0")}`;
+/** Product id as in `seed/products.sql`: `00000000-0000-4000-8000-0000000000NN`. */
+function productId(n: number): string {
+  return `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 }
 
-function imageUrl(slug: string, index: number): string {
-  return `https://placehold.co/600x600?text=${slug}-${index}`;
+const FLASH_SALE_ID = "00000000-0000-4000-8000-0000000f1a58";
+
+/** The seed's placeholder image: two per product, positions 1 and 2. */
+function imageUrl(slug: string, position: number): string {
+  return `https://placehold.co/800x800?text=${slug}-${position}`;
 }
 
 function toDetail(seed: Seed): ProductDetail {
   const variantSkus = seed.variants ?? [{ sku: seed.sku, color: "" }];
   return {
-    id: uuid(1, seed.n),
+    id: productId(seed.n),
     sku: seed.sku,
     slug: seed.slug,
     name: seed.name,
     brand: seed.brand,
     description: `${seed.name}. Hàng chính hãng, bảo hành 12 tháng, đổi trả trong 30 ngày.`,
-    imageUrl: imageUrl(seed.slug, 0),
-    images: [0, 1, 2, 3].map((i) => ({
-      url: imageUrl(seed.slug, i),
-      alt: `${seed.name} ${i + 1}`,
+    imageUrl: imageUrl(seed.slug, 1),
+    images: [1, 2].map((position) => ({
+      url: imageUrl(seed.slug, position),
+      alt: `${seed.name} (${position})`,
     })),
     price: vnd(seed.price),
     ...(seed.listPrice ? { listPrice: vnd(seed.listPrice) } : {}),
@@ -262,7 +264,7 @@ export const availabilityFixtures: Record<string, Availability> = Object.fromEnt
 export function createFlashSale(now: Date = new Date()): FlashSale {
   const hour = 60 * 60 * 1000;
   return {
-    id: uuid(2, 1),
+    id: FLASH_SALE_ID,
     startsAt: new Date(now.getTime() - hour).toISOString(),
     endsAt: new Date(now.getTime() + 2 * hour).toISOString(),
     items: seeds.flatMap((seed, i) => {
