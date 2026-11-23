@@ -24,3 +24,11 @@ export { ProductHeading } from "./components/product-heading";
 export { ProductDescription } from "./components/product-description";
 export { ProductServiceInfo } from "./components/product-service-info";
 export { SimilarProducts } from "./components/similar-products";
+export { PriceBox } from "./components/price-box";
+export { PriceBoxSkeleton } from "./components/price-box-skeleton";
+export {
+  ProductSelectionProvider,
+  PurchasePanel,
+  SelectedGallery,
+  useProductSelection,
+} from "./components/purchase-panel";
