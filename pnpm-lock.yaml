@@ -170,8 +170,8 @@ importers:
         specifier: ^7.0.7
         version: 7.0.7(ajv-formats@2.1.1(ajv@8.20.0))(ajv@8.20.0)(react-hook-form@7.92.0(@types/react@19.3.0)(react@19.3.0))(zod@4.6.7)
       '@shop/api-contract':
-        specifier: https://github.com/nhatsinh92/shop-api/releases/download/contract-v1.0.0/shop-api-contract-1.0.0.tgz
-        version: https://github.com/nhatsinh92/shop-api/releases/download/contract-v1.0.0/shop-api-contract-1.0.0.tgz
+        specifier: https://github.com/nhatsinh92/shop-api/releases/download/contract-v1.2.0/shop-api-contract-1.2.0.tgz
+        version: https://github.com/nhatsinh92/shop-api/releases/download/contract-v1.2.0/shop-api-contract-1.2.0.tgz
       '@tanstack/query-async-storage-persister':
         specifier: ^5.108.0
         version: 5.108.0
@@ -1711,9 +1711,9 @@ packages:
   '@rtsao/scc@1.1.0':
     resolution: {integrity: sha512-zt6OdqaDoOnJ1ZYsCYGt9YmWzDXl4vQdKTyJev62gFhRGKdx7mcT54V9KIjg+d2wi9EXsPvAPKe7i7WjfVWB8g==}
 
-  '@shop/api-contract@https://github.com/nhatsinh92/shop-api/releases/download/contract-v1.0.0/shop-api-contract-1.0.0.tgz':
-    resolution: {integrity: sha512-DQ+bYoNQcdHdndJBYc4aod4JHDMdP+qV5Enuesy6HUW9t/dIGZEcqmyZsSp5DEw4PtN6xe/nwVmvzC2MVVASAw==, tarball: https://github.com/nhatsinh92/shop-api/releases/download/contract-v1.0.0/shop-api-contract-1.0.0.tgz}
-    version: 1.0.0
+  '@shop/api-contract@https://github.com/nhatsinh92/shop-api/releases/download/contract-v1.2.0/shop-api-contract-1.2.0.tgz':
+    resolution: {integrity: sha512-90GJvC+oEhbqjWDqUUPKSu7RaA3Bl3HhEftW9ld+5I7ez1O7108hyPMKVe/fwE40zv7v2V01hOZHnvyJF359Lw==, tarball: https://github.com/nhatsinh92/shop-api/releases/download/contract-v1.2.0/shop-api-contract-1.2.0.tgz}
+    version: 1.2.0
 
   '@standard-schema/utils@0.3.0':
     resolution: {integrity: sha512-e7Mew686owMaPJVNNLs55PUvgz371nKgwsc4vxE49zsODpJEnxgxRo2y/OKrqueavXgZNMDVj3DdHFlaSAeU8g==}
@@ -5553,7 +5553,7 @@ snapshots:
 
   '@rtsao/scc@1.1.0': {}
 
-  '@shop/api-contract@https://github.com/nhatsinh92/shop-api/releases/download/contract-v1.0.0/shop-api-contract-1.0.0.tgz': {}
+  '@shop/api-contract@https://github.com/nhatsinh92/shop-api/releases/download/contract-v1.2.0/shop-api-contract-1.2.0.tgz': {}
 
   '@standard-schema/utils@0.3.0': {}
 
