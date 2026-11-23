@@ -21,6 +21,8 @@ export const PRODUCT_LIST_BUDGET_MS = 300;
 
 const SIMILAR_FETCH_LIMIT = 6;
 const SIMILAR_SHOWN = 5;
+/** Enough of the parent category to fill five after dropping the leaf and the product itself. */
+const PARENT_FETCH_LIMIT = 12;
 
 function isApiError(error: unknown, code: string): boolean {
   return error instanceof ApiError && error.code === code;
@@ -87,13 +89,31 @@ export async function getSimilarProducts(product: ProductDetail): Promise<Produc
   cacheLife("hours");
   cacheTag("products");
 
-  const category = product.category.slug;
+  // A leaf category can hold too few products (the ANC Pro is alone in its own), so the rest of
+  // the parent category fills the list; listProducts includes subcategories. Leaf products come
+  // first. Both lists are always read (the result is cached for hours, so the extra call is rare);
+  // the parent is read first and the leaf last, which takes precedence when merging.
+  const parent = product.category.path.at(-2)?.slug;
+  const wider = parent ? await listCategory(parent, PARENT_FETCH_LIMIT) : [];
+  const leaf = await listCategory(product.category.slug, SIMILAR_FETCH_LIMIT);
+
+  const seen = new Set([product.slug]);
+  const similar: ProductSummary[] = [];
+  for (const item of [...leaf, ...wider]) {
+    if (seen.has(item.slug)) continue;
+    seen.add(item.slug);
+    similar.push(item);
+  }
+  return similar.slice(0, SIMILAR_SHOWN);
+}
+
+async function listCategory(category: string, limit: number): Promise<ProductSummary[]> {
   const { data } = await serverApi("core", { budgetMs: PRODUCT_LIST_BUDGET_MS }).GET(
     "/api/products",
-    { params: { query: { category, limit: SIMILAR_FETCH_LIMIT } } },
+    { params: { query: { category, limit } } },
   );
   if (!data) throw new Error(`listProducts returned no body for category ${category}`);
-  return data.items.filter((item) => item.slug !== product.slug).slice(0, SIMILAR_SHOWN);
+  return data.items;
 }
 
 /**
