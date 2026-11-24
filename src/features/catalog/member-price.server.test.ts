@@ -71,7 +71,7 @@ describe("getMemberPriceForRequest", () => {
   it("returns client when the backend exceeds the 250 ms budget", async () => {
     cookies({ access_token: "tok-1" });
     expect(MEMBER_PRICE_BUDGET_MS).toBe(250);
-    server.use(productOverrides.delayedMemberPrice(MEMBER_PRICE_BUDGET_MS + 150));
+    server.use(productOverrides.delayedMemberPrice("infinite"));
     expect(await getMemberPriceForRequest(slug)).toEqual({ kind: "client" });
   });
 
