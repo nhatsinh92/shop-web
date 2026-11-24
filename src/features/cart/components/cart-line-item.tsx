@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { formatVnd } from "@/lib/format";
 
+import { LineSelectCheckbox } from "./line-select-checkbox";
 import { QuantityStepper } from "./quantity-stepper";
 import { RemoveLineButton } from "./remove-line-button";
 
@@ -35,6 +36,7 @@ export function CartLineItem({ line, onQuantityChange, onRemove }: CartLineItemP
   return (
     <article className="flex flex-wrap items-center gap-4 rounded-2xl border border-stone-200 bg-white px-5 py-4">
       <div className="flex min-w-0 flex-[1_1_340px] items-center gap-4">
+        <LineSelectCheckbox sku={line.sku} name={line.name} />
         <Image
           src={line.imageUrl}
           alt=""

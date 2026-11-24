@@ -1,10 +1,12 @@
 "use client";
 
 import { useIsRestoring, useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
 
 import { messageFor } from "@/lib/api/error-messages";
 
 import { cartQueries } from "../queries";
+import { hydrateCartSelection, useCartSelectionStore } from "../stores/cart-selection-store";
 import { useCartEdits } from "../use-debounced-quantity";
 import { CartSyncLabel } from "./cart-sync-label";
 import { CartEmptyState } from "./cart-empty-state";
@@ -22,6 +24,14 @@ export function CartView() {
   const { data, error, isError, refetch } = useQuery(cartQueries.mine());
   const { setQuantity, remove, sync } = useCartEdits();
   const retry = () => void refetch();
+  const syncSelection = useCartSelectionStore((state) => state.sync);
+  const skus = data?.items.map((line) => line.sku).join("\n");
+
+  // Load the saved selection first, then forget lines that left the cart.
+  useEffect(() => {
+    hydrateCartSelection();
+    if (skus !== undefined) syncSelection(skus === "" ? [] : skus.split("\n"));
+  }, [skus, syncSelection]);
 
   if (!data) {
     if (isError) return <CartEmptyState message={messageFor(error)} onRetry={retry} />;
