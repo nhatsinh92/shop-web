@@ -31,7 +31,7 @@ describe("RecommendationsSection", () => {
   });
 
   it("renders nothing and logs once on a timeout", async () => {
-    server.use(productOverrides.delayedRecommendations(400));
+    server.use(productOverrides.delayedRecommendations("infinite"));
     const container = await renderSection();
     expect(screen.queryByRole("heading")).not.toBeInTheDocument();
     expect(container).toBeEmptyDOMElement();
