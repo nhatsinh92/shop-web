@@ -63,14 +63,35 @@ export function serverApi<S extends ApiService>(
 
   async function transport(request: Request): Promise<Response> {
     const path = new URL(request.url).pathname;
-    const signal = AbortSignal.any([request.signal, AbortSignal.timeout(budgetMs)]);
+    const budget = new AbortController();
+    const timer = setTimeout(
+      () => budget.abort(new DOMException(`${budgetMs} ms budget elapsed`, "TimeoutError")),
+      budgetMs,
+    );
+    const signal = AbortSignal.any([request.signal, budget.signal]);
+    // Race the fetch against the signal ourselves: the copy made by `new Request(..., { signal })`
+    // follows `signal` only through a weak reference, so after a garbage collection the abort may
+    // never reach fetch (or MSW) and the budget would not hold.
+    let onAbort = () => {};
+    const aborted = new Promise<never>((_, reject) => {
+      onAbort = () => reject(signal.reason);
+      signal.addEventListener("abort", onAbort, { once: true });
+    });
     let res: Response;
     try {
-      res = await globalThis.fetch(new Request(request, { signal, cache: "no-store" }));
+      res = await Promise.race([
+        globalThis.fetch(new Request(request, { signal, cache: "no-store" })),
+        aborted,
+      ]);
     } catch (error) {
-      if (isTimeout(error)) throw new ApiTimeoutError({ service, path, budgetMs });
-      if (isAbort(error)) throw error;
+      if (budget.signal.aborted || isTimeout(error)) {
+        throw new ApiTimeoutError({ service, path, budgetMs });
+      }
+      if (request.signal.aborted || isAbort(error)) throw error;
       throw networkError(error);
+    } finally {
+      clearTimeout(timer);
+      signal.removeEventListener("abort", onAbort);
     }
     if (!res.ok) throw await apiErrorFromResponse(res);
     return res;
