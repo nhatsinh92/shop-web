@@ -142,14 +142,17 @@ export const productOverrides = {
         )
       : response(404).json(productNotFoundProblem, { headers: problemHeaders() }),
   ),
-  /** Recommendations that answer after `ms` milliseconds (250 ms budget tests). */
-  delayedRecommendations: (ms: number) =>
+  /**
+   * Recommendations that answer after `ms` milliseconds, or never with `"infinite"`. Budget tests
+   * use `"infinite"` so only the budget can end the request, however slow the runner is.
+   */
+  delayedRecommendations: (ms: number | "infinite") =>
     coreHttp.get("/api/recommendations", async ({ response }) => {
       await delay(ms);
       return response(200).json({ items: productSummaryFixtures.slice(5, 10) });
     }),
-  /** Member price that answers after `ms` milliseconds (250 ms budget tests). */
-  delayedMemberPrice: (ms: number) =>
+  /** Member price that answers after `ms` milliseconds, or never with `"infinite"` (budget tests). */
+  delayedMemberPrice: (ms: number | "infinite") =>
     coreHttp.get("/api/products/{slug}/member-price", async ({ params, response }) => {
       await delay(ms);
       const price = memberPriceFor(params.slug);

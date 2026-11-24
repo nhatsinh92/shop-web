@@ -47,7 +47,7 @@ describe("listRecommendations", () => {
   it("rejects when the backend exceeds the 250 ms budget", async () => {
     cookieGet.mockReturnValue(undefined);
     expect(RECOMMENDATIONS_BUDGET_MS).toBe(250);
-    server.use(productOverrides.delayedRecommendations(RECOMMENDATIONS_BUDGET_MS + 150));
+    server.use(productOverrides.delayedRecommendations("infinite"));
     await expect(listRecommendations()).rejects.toMatchObject({ name: "ApiTimeoutError" });
   });
 });
