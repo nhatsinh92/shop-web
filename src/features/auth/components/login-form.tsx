@@ -26,7 +26,7 @@ function isLoginField(value: string): value is (typeof FIELDS)[number] {
 const ERROR_TEXT = "text-sm text-destructive";
 
 /** /login form: RHF + Zod, contract errors next to the form, safe redirect to `next`. */
-export function LoginForm() {
+export function LoginForm({ onLoggedIn }: { onLoggedIn?: () => Promise<void> }) {
   const router = useRouter();
   const next = useSearchParams().get("next");
   const queryClient = useQueryClient();
@@ -46,6 +46,11 @@ export function LoginForm() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: authKeys.all });
       notifySessionHintChanged();
+      try {
+        await onLoggedIn?.();
+      } catch (error) {
+        console.warn("onLoggedIn failed; continuing to the redirect", error);
+      }
       router.replace(safeNextPath(next));
     },
     onError: (error) => {
