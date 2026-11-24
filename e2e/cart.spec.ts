@@ -214,7 +214,10 @@ test.describe("cart and login", () => {
     await submitLoginForm(page, newEmail("ok", testInfo.workerIndex));
     await expect(page).toHaveURL((url) => url.pathname === "/");
     await page.goto("/cart");
-    await expect(page.getByText("Giỏ hàng đang trống")).toBeVisible();
+    // Scoped to the lines region: while the response streams, the hidden Suspense copy matches too.
+    await expect(
+      page.getByRole("region", { name: "Sản phẩm trong giỏ" }).getByText("Giỏ hàng đang trống"),
+    ).toBeVisible();
     await expect(page.getByText(anc.name)).toHaveCount(0);
     await expect(page.getByText(bottle.name)).toHaveCount(0);
   });
