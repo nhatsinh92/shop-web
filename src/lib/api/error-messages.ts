@@ -19,6 +19,7 @@ export const errorMessages: Record<string, string> = {
   CART_ITEM_NOT_FOUND: "Sản phẩm này không còn trong giỏ hàng.",
   CART_OUT_OF_STOCK: "Sản phẩm không đủ số lượng trong kho.",
   CART_QTY_LIMIT: "Bạn đã đạt số lượng tối đa cho sản phẩm này.",
+  CART_ITEMS_LIMIT: "Giỏ hàng đã đủ 50 sản phẩm",
   ORDER_NOT_FOUND: "Không tìm thấy đơn hàng này.",
   CONFLICT: "Dữ liệu vừa được cập nhật. Vui lòng thử lại.",
   IDEMPOTENCY_KEY_MISSING: "Yêu cầu chưa hợp lệ. Vui lòng thử lại.",
