@@ -5,6 +5,8 @@ import { useIsRestoring, useQuery } from "@tanstack/react-query";
 import { messageFor } from "@/lib/api/error-messages";
 
 import { cartQueries } from "../queries";
+import { useCartEdits } from "../use-debounced-quantity";
+import { CartSyncLabel } from "./cart-sync-label";
 import { CartEmptyState } from "./cart-empty-state";
 import { CartLineItem } from "./cart-line-item";
 import { CartSkeleton } from "./cart-skeleton";
@@ -18,6 +20,7 @@ import { CartStaleBanner } from "./cart-stale-banner";
 export function CartView() {
   const isRestoring = useIsRestoring();
   const { data, error, isError, refetch } = useQuery(cartQueries.mine());
+  const { setQuantity, remove, sync } = useCartEdits();
   const retry = () => void refetch();
 
   if (!data) {
@@ -30,13 +33,23 @@ export function CartView() {
   return (
     <div className="flex flex-col gap-3">
       {stale && <CartStaleBanner onRetry={retry} />}
-      <h1 className="rounded-2xl border border-stone-200 bg-white px-5 py-3.5 text-xl font-extrabold text-ink">
-        Giỏ hàng <span className="font-medium text-stone-600">({data.itemCount} sản phẩm)</span>
-      </h1>
+      <div className="flex items-baseline justify-between gap-3 rounded-2xl border border-stone-200 bg-white px-5 py-3.5">
+        <h1 className="text-xl font-extrabold text-ink">
+          Giỏ hàng <span className="font-medium text-stone-600">({data.itemCount} sản phẩm)</span>
+        </h1>
+        <CartSyncLabel state={sync} />
+      </div>
       {data.items.length === 0 ? (
         <CartEmptyState />
       ) : (
-        data.items.map((line) => <CartLineItem key={line.sku} line={line} />)
+        data.items.map((line) => (
+          <CartLineItem
+            key={line.sku}
+            line={line}
+            onQuantityChange={(quantity) => setQuantity(line.sku, quantity)}
+            onRemove={() => remove(line.sku)}
+          />
+        ))
       )}
       {stale && data.items.length > 0 && (
         <p className="text-xs text-warning">Tổng tiền tạm tính theo giá đã lưu</p>

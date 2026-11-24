@@ -37,6 +37,20 @@ export async function removeCartItem(sku: string): Promise<Cart> {
   return unwrap(await api.DELETE("/api/cart/items/{sku}", { params: { path: { sku } } }));
 }
 
+/**
+ * Browser call for `pagehide`: sends the final quantity of a line with `keepalive` so the request
+ * outlives the page. Fire and forget; a 401 is not retried (accepted loss, epic § Quantity and remove).
+ */
+export function flushCartQuantity(sku: string, quantity: number): void {
+  void fetch(`${globalThis.location.origin}/api/cart/items/${encodeURIComponent(sku)}`, {
+    method: "PATCH",
+    keepalive: true,
+    credentials: "include",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ quantity }),
+  }).catch(() => undefined);
+}
+
 /** Browser call: merges the guest cart into the signed-in cart and returns the result. */
 export async function postCartMerge(signal?: AbortSignal): Promise<Cart> {
   return unwrap(await api.POST("/api/cart/merge", { signal }));

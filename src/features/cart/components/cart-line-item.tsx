@@ -3,6 +3,9 @@ import Link from "next/link";
 
 import { formatVnd } from "@/lib/format";
 
+import { QuantityStepper } from "./quantity-stepper";
+import { RemoveLineButton } from "./remove-line-button";
+
 import type { Cart } from "../api";
 
 export type CartLine = Cart["items"][number];
@@ -19,8 +22,14 @@ function StockLabel({ line }: { line: CartLine }) {
   return null;
 }
 
-/** One read-only cart line: image, name, variant, prices, stock label and line total. */
-export function CartLineItem({ line }: { line: CartLine }) {
+interface CartLineItemProps {
+  line: CartLine;
+  onQuantityChange: (quantity: number) => void;
+  onRemove: () => void;
+}
+
+/** One cart line: image, name, variant, prices, stock label, stepper, line total and remove. */
+export function CartLineItem({ line, onQuantityChange, onRemove }: CartLineItemProps) {
   const struck = line.listPrice && line.listPrice.amount > line.unitPrice.amount;
 
   return (
@@ -54,9 +63,11 @@ export function CartLineItem({ line }: { line: CartLine }) {
           <StockLabel line={line} />
         </div>
       </div>
+      <QuantityStepper line={line} onChange={onQuantityChange} />
       <span className="ml-auto min-w-[110px] text-right font-bold tabular-nums">
         {formatVnd(line.lineTotal.amount)}
       </span>
+      <RemoveLineButton line={line} onRemove={onRemove} />
     </article>
   );
 }
