@@ -5,3 +5,4 @@ export { CartBadge } from "./components/cart-badge";
 export { AddToCartButton } from "./components/add-to-cart-button";
 export { CartView } from "./components/cart-view";
 export { cartKeys, cartQueries, setCartCaches } from "./queries";
+export { CartSummaryPanel } from "./components/cart-summary-panel";

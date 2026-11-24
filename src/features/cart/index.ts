@@ -8,3 +8,4 @@ export type { Cart, CartSummary } from "./api";
 export { CartSection } from "./cart-section";
 export { CartSkeleton } from "./components/cart-skeleton";
 export { CartPageShell } from "./components/cart-page-shell";
+export { CartSummaryPanel } from "./components/cart-summary-panel";
