@@ -1,3 +1,6 @@
 // Client-safe entry of the cart feature: only what client components in app/ need.
 // Never re-export anything that reaches cart.server.ts or "server-only".
 export { mergeGuestCart } from "./merge-guest-cart";
+export { CartBadge } from "./components/cart-badge";
+export { AddToCartButton } from "./components/add-to-cart-button";
+export { cartKeys, cartQueries, setCartCaches } from "./queries";

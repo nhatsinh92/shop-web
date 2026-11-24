@@ -1,6 +1,6 @@
 "use client";
 
-import { AddToCartButton } from "@/features/cart";
+import { AddToCartButton } from "@/features/cart/client";
 import { useProductSelection } from "@/features/catalog/client";
 
 /** Composes catalog and cart: the selected SKU and quantity feed the add to cart button. */
