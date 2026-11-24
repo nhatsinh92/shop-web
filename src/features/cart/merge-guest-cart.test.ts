@@ -18,16 +18,16 @@ describe("mergeGuestCart", () => {
     });
   });
 
-  it("calls POST /api/cart/merge with a timeout signal", async () => {
-    let signalSeen = false;
+  it("calls POST /api/cart/merge", async () => {
+    let method = "";
     server.use(
       http.post("*/api/cart/merge", ({ request }) => {
-        signalSeen = request.method === "POST";
+        method = request.method;
         return HttpResponse.json(cartFixture);
       }),
     );
     await mergeGuestCart(new QueryClient());
-    expect(signalSeen).toBe(true);
+    expect(method).toBe("POST");
   });
 
   it("rejects and leaves the caches untouched when the merge is unavailable", async () => {
@@ -42,7 +42,9 @@ describe("mergeGuestCart", () => {
     const client = new QueryClient();
     const started = Date.now();
     await expect(mergeGuestCart(client)).rejects.toBeDefined();
-    expect(Date.now() - started).toBeLessThan(2000);
+    const elapsed = Date.now() - started;
+    expect(elapsed).toBeGreaterThanOrEqual(900);
+    expect(elapsed).toBeLessThan(1500);
     expect(client.getQueryData(cartKeys.mine())).toBeUndefined();
   });
 });

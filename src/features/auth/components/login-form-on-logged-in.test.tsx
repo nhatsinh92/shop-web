@@ -53,6 +53,18 @@ describe("LoginForm onLoggedIn", () => {
     warn.mockRestore();
   });
 
+  it("redirects once a callback that rejects after 1 s has failed", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    await submit(
+      () => new Promise<void>((_, reject) => setTimeout(() => reject(new Error("timeout")), 1000)),
+    );
+    const started = Date.now();
+    await waitFor(() => expect(replace).toHaveBeenCalledWith("/"), { timeout: 2500 });
+    expect(Date.now() - started).toBeLessThan(1500);
+    expect(warn).toHaveBeenCalledTimes(1);
+    warn.mockRestore();
+  });
+
   it("redirects without a callback", async () => {
     await submit();
     await waitFor(() => expect(replace).toHaveBeenCalledWith("/"));
