@@ -3,6 +3,8 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it } from "vitest";
 
+import { formatVnd } from "@/lib/format";
+
 import { buildCart, cartFixture, emptyCartFixture } from "@mocks/fixtures/cart";
 
 import { cartQueries } from "../queries";
@@ -48,7 +50,14 @@ describe("CartSummaryPanel", () => {
   it("totals only the selected lines when one is unchecked", async () => {
     setup(cartFixture, { withView: true });
     await userEvent.click(screen.getAllByRole("checkbox", { name: /^Chọn / })[0]!);
-    expect(screen.getByText("Tạm tính (3 sản phẩm)")).toBeInTheDocument();
+    const [first] = cartFixture.items;
+    if (!first) throw new Error("fixture");
+    const remaining = formatVnd(2_418_000 - first.lineTotal.amount);
+    expect(screen.getByText(`Tạm tính (${4 - first.quantity} sản phẩm)`)).toBeInTheDocument();
+    const subtotalRow = screen.getByText(/^Tạm tính/).parentElement;
+    const totalRow = screen.getByText("Tổng cộng").parentElement;
+    expect(subtotalRow).toHaveTextContent(remaining);
+    expect(totalRow).toHaveTextContent(remaining);
   });
 
   it("excludes unavailable lines from the count and totals", () => {

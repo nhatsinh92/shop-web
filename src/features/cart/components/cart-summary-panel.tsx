@@ -2,14 +2,18 @@
 
 import { useIsRestoring, useQuery } from "@tanstack/react-query";
 import Link from "next/link";
+import { useEffect } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatVnd } from "@/lib/format";
 
 import { cartQueries } from "../queries";
-import { isLineSelected, useCartSelectionStore } from "../stores/cart-selection-store";
-import { useHydratedCartSelection } from "./use-hydrated-cart-selection";
+import {
+  hydrateCartSelection,
+  isLineSelected,
+  useCartSelectionStore,
+} from "../stores/cart-selection-store";
 
 const checkoutClass = "h-touch w-full rounded-xl text-base font-bold";
 
@@ -19,7 +23,10 @@ const checkoutClass = "h-touch w-full rounded-xl text-base font-bold";
  * "Thanh toán" button, never 0₫. Totals count selected, available lines only.
  */
 export function CartSummaryPanel() {
-  useHydratedCartSelection();
+  // Load the saved selection after mount so the first client render matches the server HTML.
+  useEffect(() => {
+    hydrateCartSelection();
+  }, []);
   const { data } = useQuery(cartQueries.mine());
   const isRestoring = useIsRestoring();
   const selection = useCartSelectionStore((state) => state);
