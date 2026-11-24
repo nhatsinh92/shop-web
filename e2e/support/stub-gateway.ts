@@ -3,8 +3,8 @@ import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import type { IncomingMessage, ServerResponse } from "node:http";
 
+import type { handleCartRoute as HandleCartRoute } from "./stub-cart";
 import type { handleProductRoute as HandleProductRoute } from "./stub-products";
-import type { components as CartComponents } from "../../src/lib/api/generated/cart";
 import type { components as CoreComponents } from "../../src/lib/api/generated/core";
 
 type UserProfile = CoreComponents["schemas"]["UserProfile"];
@@ -14,7 +14,15 @@ export const ACCESS_TTL_SECONDS = 300;
 export const SHORT_ACCESS_TTL_SECONDS = 30;
 
 /** Scenarios are selected per request by the tag in the login email: `shopper+<tag>.<id>@host`. */
-export type Scenario = "ok" | "short-ttl" | "logout-fails" | "slow" | "cart-conflict";
+export type Scenario =
+  | "ok"
+  | "short-ttl"
+  | "logout-fails"
+  | "slow"
+  | "cart-conflict"
+  | "cart-full"
+  | "cart-slow"
+  | "cart-merge-slow";
 
 export function emailFor(scenario: Scenario, id: string): string {
   return `shopper+${scenario}.${id}@example.com`;
@@ -22,7 +30,15 @@ export function emailFor(scenario: Scenario, id: string): string {
 
 export function scenarioOf(email: string): Scenario {
   const tag = email.split("@")[0]?.split("+")[1]?.split(".")[0];
-  const known: Scenario[] = ["short-ttl", "logout-fails", "slow", "cart-conflict"];
+  const known: Scenario[] = [
+    "short-ttl",
+    "logout-fails",
+    "slow",
+    "cart-conflict",
+    "cart-full",
+    "cart-slow",
+    "cart-merge-slow",
+  ];
   return known.find((name) => name === tag) ?? "ok";
 }
 
@@ -73,7 +89,6 @@ export function profileFor(email: string): UserProfile {
 
 type Problem = CoreComponents["schemas"]["Problem"];
 type LoginRequest = CoreComponents["schemas"]["LoginRequest"];
-type CartSummary = CartComponents["schemas"]["CartSummary"];
 
 const port = Number(process.env.E2E_STUB_PORT ?? 4010);
 const REFRESH_TTL_SECONDS = 14 * 24 * 60 * 60;
@@ -176,41 +191,23 @@ function me(req: IncomingMessage, res: ServerResponse) {
   send(res, 200, profileFor(claims.email));
 }
 
-/** Items per user (or "guest"), so parallel tests never see each other's carts. */
-const cartCounts = new Map<string, number>();
-
-/** The caller's identity: the email in the access token (cookie or bearer), else "guest". */
+/** The caller's identity: the email in the access token (cookie or bearer), else null. */
 function callerEmail(req: IncomingMessage): string | null {
-  const bearer = req.headers.authorization?.replace(/^Bearer /, "");
-  return readClaims(bearer ?? cookies(req)["access_token"])?.email ?? null;
+  return callerClaims(req)?.email ?? null;
 }
 
-async function addCartItem(req: IncomingMessage, res: ServerResponse) {
-  const email = callerEmail(req);
-  if (email && scenarioOf(email) === "cart-conflict") {
-    return problem(res, 409, "CART_OUT_OF_STOCK", "Out of stock");
-  }
-  let quantity = 0;
-  try {
-    quantity = Number((JSON.parse(await readBody(req)) as { quantity?: unknown }).quantity);
-  } catch {
-    return problem(res, 400, "VALIDATION_FAILED", "Invalid body");
-  }
-  if (!Number.isInteger(quantity) || quantity < 1) {
-    return problem(res, 400, "VALIDATION_FAILED", "Invalid quantity");
-  }
-  const key = email ?? "guest";
-  const itemCount = (cartCounts.get(key) ?? 0) + quantity;
-  cartCounts.set(key, itemCount);
-  send(res, 200, {
-    items: [],
-    itemCount,
-    subtotal: { amount: 0, currency: "VND" },
-    updatedAt: new Date().toISOString(),
-  });
+function callerClaims(req: IncomingMessage) {
+  const bearer = req.headers.authorization?.replace(/^Bearer /, "");
+  return readClaims(bearer ?? cookies(req)["access_token"]);
 }
 
 // Loaded by path: Node needs the `.ts` extension, which tsc rejects in a static import.
+let cartRoutes: Promise<{ handleCartRoute: typeof HandleCartRoute }> | undefined;
+function loadCartRoutes() {
+  cartRoutes ??= import(pathToFileURL(resolve("e2e/support/stub-cart.ts")).href);
+  return cartRoutes;
+}
+
 let productRoutes: Promise<{ handleProductRoute: typeof HandleProductRoute }> | undefined;
 function loadProductRoutes() {
   productRoutes ??= import(pathToFileURL(resolve("e2e/support/stub-products.ts")).href);
@@ -227,6 +224,17 @@ const server = createServer(async (req, res) => {
     serverSide: Boolean(req.headers.authorization),
   });
   if (handled) return;
+  const jar = cookies(req);
+  const cartHandled = await (
+    await loadCartRoutes()
+  ).handleCartRoute(req, res, url, {
+    token: callerClaims(req),
+    serverSide: Boolean(req.headers.authorization),
+    hint: jar["logged_in"] === "1",
+    guestId: jar["guest_cart"],
+    scenario: email ? scenarioOf(email) : "ok",
+  });
+  if (cartHandled) return;
   const route = `${req.method} ${url.pathname}`;
   switch (route) {
     case "POST /api/auth/login":
@@ -237,12 +245,6 @@ const server = createServer(async (req, res) => {
       return logout(req, res);
     case "GET /api/auth/me":
       return me(req, res);
-    case "GET /api/cart/summary": {
-      const summary: CartSummary = { itemCount: cartCounts.get(email ?? "guest") ?? 0 };
-      return send(res, 200, summary);
-    }
-    case "POST /api/cart/items":
-      return void addCartItem(req, res);
     case "GET /__stub/health":
       return send(res, 200, { status: "UP" });
     case "GET /__stub/refresh-calls":
