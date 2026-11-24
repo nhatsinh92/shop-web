@@ -79,7 +79,6 @@ export const cartLineFixtures: CartItem[] = [
     slug: slugFor("SKU-BOTTLE-750"),
     name: nameFor("SKU-BOTTLE-750"),
     imageUrl: imageFor("SKU-BOTTLE-750"),
-    variantLabel: "Màu: Xanh rêu",
     unitPrice: 189_000,
     listPrice: 320_000,
     stockLevel: "IN_STOCK",

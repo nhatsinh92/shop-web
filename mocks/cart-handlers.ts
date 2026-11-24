@@ -1,13 +1,75 @@
 import { delay } from "msw";
 
-import { emptyCartFixture } from "./fixtures/cart";
-import { cartState, MAX_LINES, MAX_QTY } from "./cart-state";
+import { buildCart, cartFixture, cartLine, emptyCartFixture, type CartItem } from "./fixtures/cart";
+import { productSummaryFixtures } from "./fixtures/products";
 import { cartHttp } from "./http";
 
 import type { components } from "../src/lib/api/generated/cart";
 
 type Cart = components["schemas"]["Cart"];
 type Problem = components["schemas"]["Problem"];
+
+const MAX_LINES = 50;
+const MAX_QTY = 10;
+
+let lines: CartItem[] = structuredClone(cartFixture.items);
+
+/** The shared in-memory cart behind the default and stateful cart handlers. */
+export const cartState = {
+  get(): Cart {
+    return buildCart(structuredClone(lines));
+  },
+  set(items: CartItem[]): void {
+    lines = structuredClone(items);
+  },
+  reset(): void {
+    lines = structuredClone(cartFixture.items);
+  },
+  find(sku: string): CartItem | undefined {
+    return lines.find((line) => line.sku === sku);
+  },
+  /** Sets the absolute quantity of an existing line; false when the SKU is not in the cart. */
+  setQuantity(sku: string, quantity: number): boolean {
+    const index = lines.findIndex((line) => line.sku === sku);
+    const line = lines[index];
+    if (!line) return false;
+    lines[index] = {
+      ...line,
+      quantity,
+      lineTotal: { amount: line.unitPrice.amount * quantity, currency: "VND" },
+    };
+    return true;
+  },
+  remove(sku: string): boolean {
+    const before = lines.length;
+    lines = lines.filter((line) => line.sku !== sku);
+    return lines.length < before;
+  },
+  /** Adds units of a catalogue SKU; false when the SKU is not in the product fixtures. */
+  add(sku: string, quantity: number): boolean {
+    const existing = this.find(sku);
+    if (existing) return this.setQuantity(sku, Math.min(MAX_QTY, existing.quantity + quantity));
+    const product = productSummaryFixtures.find((p) => p.sku === sku);
+    if (!product) return false;
+    lines.push(
+      cartLine({
+        sku,
+        slug: product.slug,
+        name: product.name,
+        imageUrl: product.imageUrl,
+        unitPrice: product.price.amount,
+        ...(product.listPrice ? { listPrice: product.listPrice.amount } : {}),
+        stockLevel: "IN_STOCK",
+        quantity: Math.min(MAX_QTY, quantity),
+        available: true,
+      }),
+    );
+    return true;
+  },
+};
+
+// Tests reset MSW handlers after each test (vitest.setup.ts); reset the cart at the same moment.
+if (typeof afterEach === "function") afterEach(() => cartState.reset());
 
 const problemHeaders = () => new Headers({ "Content-Type": "application/problem+json" });
 
@@ -42,7 +104,12 @@ const patchHandler = (reject: Reject = never) =>
         headers: problemHeaders(),
       });
     }
-    if (!Number.isInteger(quantity) || quantity < 1 || quantity > MAX_QTY) {
+    if (!Number.isInteger(quantity) || quantity < 1) {
+      return response(400).json(problem(400, "VALIDATION_FAILED", "Validation failed"), {
+        headers: problemHeaders(),
+      });
+    }
+    if (quantity > MAX_QTY) {
       return response(422).json(
         { ...problem(422, "CART_QTY_LIMIT", "Quantity limit"), limit: MAX_QTY },
         { headers: problemHeaders() },
@@ -135,6 +202,12 @@ export const cartOverrides = {
       { ...problem(422, "CART_QTY_LIMIT", "Quantity limit"), limit: MAX_QTY },
       { headers: problemHeaders() },
     ),
+  ),
+  /** 409 `CART_OUT_OF_STOCK` on `PATCH /api/cart/items/{sku}`. */
+  patchOutOfStock: cartHttp.patch("/api/cart/items/{sku}", ({ response }) =>
+    response(409).json(problem(409, "CART_OUT_OF_STOCK", "Out of stock"), {
+      headers: problemHeaders(),
+    }),
   ),
   /** 503 `SERVICE_UNAVAILABLE` on `PATCH /api/cart/items/{sku}`. */
   patchUnavailable: cartHttp.patch("/api/cart/items/{sku}", ({ response }) =>

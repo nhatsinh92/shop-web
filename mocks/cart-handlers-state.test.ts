@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { cartState } from "./cart-state";
-import { cartOverrides } from "./cart-handlers";
+import { cartOverrides, cartState } from "./cart-handlers";
 import { buildCart, cartFixture, cartLine, emptyCartFixture } from "./fixtures/cart";
 import { server } from "./node";
 
@@ -35,7 +34,7 @@ describe("cart fixture", () => {
       1_790_000, 1_690_000, 320_000,
     ]);
     expect(cartFixture.items[0]?.variantLabel).toBe("Màu: Đen nhám");
-    expect(cartFixture.items[2]?.variantLabel).toBe("Màu: Xanh rêu");
+    expect(cartFixture.items[2]?.variantLabel).toBeUndefined();
     for (const item of cartFixture.items) {
       expect(item.lineTotal.amount).toBe(item.unitPrice.amount * item.quantity);
     }
@@ -60,10 +59,16 @@ describe("default cart handlers", () => {
     expect(cart.subtotal.amount).toBe(890_000 + 1_150_000 + 5 * 189_000);
   });
 
-  it.each([0, 11])("PATCH quantity %i answers 422 CART_QTY_LIMIT", async (quantity) => {
-    const res = await patch("SKU-KB-75", quantity);
+  it("PATCH quantity 0 answers 400 VALIDATION_FAILED", async () => {
+    const res = await patch("SKU-KB-75", 0);
+    expect(res.status).toBe(400);
+    expect(await res.json()).toMatchObject({ code: "VALIDATION_FAILED" });
+  });
+
+  it("PATCH quantity 11 answers 422 CART_QTY_LIMIT with limit 10", async () => {
+    const res = await patch("SKU-KB-75", 11);
     expect(res.status).toBe(422);
-    expect(await res.json()).toMatchObject({ code: "CART_QTY_LIMIT" });
+    expect(await res.json()).toMatchObject({ code: "CART_QTY_LIMIT", limit: 10 });
   });
 
   it("PATCH unknown SKU answers 404 CART_ITEM_NOT_FOUND", async () => {
@@ -182,6 +187,13 @@ describe("cart overrides", () => {
     const res = await patch("SKU-KB-75", 2);
     expect(res.status).toBe(422);
     expect(await res.json()).toMatchObject({ code: "CART_QTY_LIMIT", limit: 10 });
+  });
+
+  it("patchOutOfStock answers 409 CART_OUT_OF_STOCK", async () => {
+    server.use(cartOverrides.patchOutOfStock);
+    const res = await patch("SKU-KB-75", 2);
+    expect(res.status).toBe(409);
+    expect(await res.json()).toMatchObject({ code: "CART_OUT_OF_STOCK" });
   });
 
   it("patchUnavailable answers 503 SERVICE_UNAVAILABLE", async () => {
