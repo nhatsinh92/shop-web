@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { useEffect, useState } from "react";
 
 import { ApiError } from "@/lib/api";
@@ -13,12 +14,17 @@ import { CheckoutSectionSkeleton, CheckoutSkeleton } from "./checkout-skeleton";
 import { CheckoutConsumed, CheckoutNotFound } from "./checkout-states";
 import { HoldBanner } from "./hold-banner";
 import { MockOutcomeSelect } from "./mock-outcome-select";
+import { PaymentFailedPanel } from "./payment-failed-panel";
+import { PaymentPending, PaymentUnconfirmed } from "./payment-pending";
 import { OrderSummary } from "./order-summary";
 import { PaymentMethods } from "./payment-methods";
 import { ReservationExpired } from "./reservation-expired";
 import { ShippingOptions } from "./shipping-options";
+import { fieldsFromError, FIELD_ERROR_MESSAGE } from "../place-order-errors";
 import { usePlaceOrder } from "../use-place-order";
 import { useCheckoutForm } from "./use-checkout-form";
+
+import type { PaymentMethod } from "../api";
 
 /**
  * Container of the checkout page (artboard Checkout, tag CLIENT): the form column and the summary
@@ -50,20 +56,47 @@ export function CheckoutView({
   });
   const shipping = useQuery({ ...checkoutQueries.shippingOptions(reservationId), retry: 1 });
   const payment = useQuery({ ...checkoutQueries.paymentMethods(), retry: 1 });
+  // A method the server refused (422) stays disabled even if the refetch still lists it.
+  const [refused, setRefused] = useState<ReadonlyArray<PaymentMethod["id"]>>([]);
+  const paymentMethods = payment.data?.items.map((method) =>
+    refused.includes(method.id) ? { ...method, available: false } : method,
+  );
   const checkoutForm = useCheckoutForm({
     displayName,
     shippingOptions: shipping.data?.items,
-    paymentMethods: payment.data?.items,
+    paymentMethods,
   });
+  const { form, selectPayment } = checkoutForm;
 
   const {
     order: placed,
+    outcome,
     pending,
     error: placeError,
     place,
-  } = usePlaceOrder((order) => {
-    markOrderDone();
-    onOrderPlaced?.(order.items.map((item) => item.sku));
+    settle,
+    giveUp,
+    reset,
+  } = usePlaceOrder({
+    onPlaced: (order) => {
+      markOrderDone();
+      onOrderPlaced?.(order.items.map((item) => item.sku));
+    },
+    onValidationFailed: (error) => {
+      const names = fieldsFromError(error);
+      if (names.length === 0) {
+        toast.error(messageFor(error));
+        return;
+      }
+      for (const name of names)
+        form.setError(name, { type: "server", message: FIELD_ERROR_MESSAGE });
+      const [first] = names;
+      if (first) form.setFocus(first);
+    },
+    onMethodUnavailable: (method) => {
+      setRefused((current) => (current.includes(method) ? current : [...current, method]));
+      void payment.refetch();
+    },
   });
   // The step bar lives outside this view; leaving the page puts it back to step 2.
   useEffect(() => resetOrderProgress, []);
@@ -71,7 +104,7 @@ export function CheckoutView({
   function placeOrder() {
     const shippingOptionId = checkoutForm.shippingOptionId;
     if (!shippingOptionId) return;
-    void checkoutForm.form.handleSubmit(({ note, ...shippingAddress }) =>
+    void form.handleSubmit(({ note, ...shippingAddress }) =>
       place(
         {
           reservationId,
@@ -88,8 +121,11 @@ export function CheckoutView({
   if (reservation.error instanceof ApiError && reservation.error.status === 404) {
     return <CheckoutNotFound />;
   }
+  // An order exists (placed, failed or pending payment): its reservation is CONSUMED by design.
+  const ordered = Boolean(placed) || (outcome !== undefined && "order" in outcome);
+  if (outcome?.kind === "consumed") return <CheckoutConsumed />;
   // The order consumed the reservation: a refetch must not replace the success state.
-  if (reservation.data?.status === "CONSUMED" && !placed) return <CheckoutConsumed />;
+  if (reservation.data?.status === "CONSUMED" && !ordered) return <CheckoutConsumed />;
   const expiredByError =
     reservation.error instanceof ApiError &&
     reservation.error.status === 410 &&
@@ -111,7 +147,12 @@ export function CheckoutView({
   const { status, expiresAt, items } = reservation.data;
   const released = status === "RELEASED";
   const expired =
-    !placed && (released || status === "EXPIRED" || expiredByError || lapsedAt === expiresAt);
+    !ordered &&
+    (released ||
+      status === "EXPIRED" ||
+      expiredByError ||
+      outcome?.kind === "expired" ||
+      lapsedAt === expiresAt);
   const fee = shippingFee ?? checkoutForm.shippingFee ?? 0;
 
   // One root for every state, so the form column keeps its state across "Giữ hàng lại".
@@ -119,9 +160,22 @@ export function CheckoutView({
     <div className="flex flex-col gap-5">
       {expired ? (
         <ReservationExpired reservationId={reservationId} items={items} released={released} />
-      ) : placed ? null : (
+      ) : ordered ? null : (
         <HoldBanner expiresAt={expiresAt} onExpire={() => setLapsedAt(expiresAt)} />
       )}
+      {outcome?.kind === "failed" ? (
+        <PaymentFailedPanel
+          order={outcome.order}
+          reservationId={reservationId}
+          items={items}
+          onSwitchToCod={() => selectPayment("COD")}
+          onRetry={reset}
+        />
+      ) : null}
+      {outcome?.kind === "pending" ? (
+        <PaymentPending order={outcome.order} onSettled={settle} onTimeout={giveUp} />
+      ) : null}
+      {outcome?.kind === "unconfirmed" ? <PaymentUnconfirmed order={outcome.order} /> : null}
       <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
         <div className="flex min-w-0 flex-1 flex-col gap-4">
           <section
@@ -131,7 +185,7 @@ export function CheckoutView({
             <h2 id="address-h" className="text-lg font-extrabold text-ink">
               Địa chỉ giao hàng
             </h2>
-            <AddressForm form={checkoutForm.form} />
+            <AddressForm form={form} />
           </section>
           <section
             aria-labelledby="ship-h"
@@ -159,7 +213,7 @@ export function CheckoutView({
             </h2>
             {payment.data ? (
               <PaymentMethods
-                methods={payment.data.items}
+                methods={paymentMethods ?? payment.data.items}
                 value={checkoutForm.paymentMethodId}
                 onChange={checkoutForm.selectPayment}
               />
@@ -177,12 +231,17 @@ export function CheckoutView({
             reservation={reservation.data}
             shippingFee={fee}
             placed={placed}
-            placing={{
-              pending,
-              disabled: !checkoutForm.shippingOptionId,
-              error: placeError,
-              onPlace: placeOrder,
-            }}
+            placing={
+              // The failed panel and the unconfirmed state own the next step; no second order.
+              outcome?.kind === "failed" || outcome?.kind === "unconfirmed"
+                ? undefined
+                : {
+                    pending,
+                    disabled: !checkoutForm.shippingOptionId,
+                    error: placeError,
+                    onPlace: placeOrder,
+                  }
+            }
           />
         </aside>
       </div>
