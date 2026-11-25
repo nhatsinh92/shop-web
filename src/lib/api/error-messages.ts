@@ -15,6 +15,8 @@ export const errorMessages: Record<string, string> = {
   CHECKOUT_OUT_OF_STOCK: "Một số sản phẩm đã hết hàng. Vui lòng kiểm tra lại giỏ hàng.",
   CHECKOUT_RESERVATION_NOT_FOUND: "Không tìm thấy đơn giữ hàng. Vui lòng thử lại.",
   CHECKOUT_RESERVATION_EXPIRED: "Đơn giữ hàng đã hết hạn. Vui lòng đặt lại.",
+  CHECKOUT_RESERVATION_CONSUMED: "Đơn hàng này đã được đặt",
+  CHECKOUT_PAYMENT_METHOD_UNAVAILABLE: "Phương thức thanh toán tạm thời không khả dụng",
   PAGINATION_CURSOR_INVALID: "Danh sách đã thay đổi. Vui lòng tải lại trang.",
   CART_ITEM_NOT_FOUND: "Sản phẩm này không còn trong giỏ hàng.",
   CART_OUT_OF_STOCK: "Sản phẩm không đủ số lượng trong kho.",
