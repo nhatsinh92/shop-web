@@ -103,6 +103,7 @@ the owner's `human-approved` label:
 - `.github/**`, `.claude/**`
 - Lint, type and coverage config: `eslint.config.mjs`, `tsconfig.json`, `vitest.config.mts`,
   `vitest.setup.ts`, `playwright.config.ts`, `.prettierrc.json`, `.prettierignore`
+- Secrets-scan config: `.gitleaks.toml` (the UUID test-data allowlist)
 - Existing test files (`*.test.ts(x)`, `e2e/**`) that already exist on `main`
 
 Security-sensitive code (`src/proxy.ts`, `src/features/auth/**`, `next.config.ts`) is **not**

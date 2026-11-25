@@ -73,6 +73,12 @@ comment is your heartbeat: `heartbeat.sh` keeps editing it.
   event) can start at once. A heartbeat left without `done` blocks every other worker for 20
   minutes; that window is only for runs that die mid-task.
 
+- **Secrets scan (`gitleaks`).** Use readable, non-secret-looking literals in tests (for example
+  `"attempt-one"`, `"key-a"`); use a UUID only where the type requires one (UUIDs in test data are
+  allowlisted in `.gitleaks.toml`). If `gitleaks` reports a finding in one of your own commits, a
+  later fix commit does not clear it and you may not force push or delete branches, so do **not**
+  open a `-v2` branch or close the PR: comment the finding (file, line, rule; never the value) on
+  the PR, label the issue `blocked`, write the `done` heartbeat and end. The owner decides.
 - Commit and push after every step (small Conventional Commits), so a later run can resume.
 
 ## 2. Claim the issue and start the heartbeat
