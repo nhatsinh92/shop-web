@@ -50,7 +50,10 @@ test.describe("checkout journeys", () => {
 
     await expectCartEmpty(page);
     await page.goto("/cart");
-    await expect(page.getByText("Giỏ hàng đang trống")).toBeVisible();
+    // Scoped to the region: while the stream swaps in, a hidden copy is in the DOM.
+    await expect(
+      page.getByRole("region", { name: "Sản phẩm trong giỏ" }).getByText("Giỏ hàng đang trống"),
+    ).toBeVisible();
   });
 
   test("submitting state is accessible while the order is in flight", async ({
