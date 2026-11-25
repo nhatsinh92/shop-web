@@ -21,6 +21,13 @@ export interface StartLine {
   unitPrice: NonNullable<CreateReservationInput["items"][number]["expectedUnitPrice"]>;
 }
 
+/** Reserves the lines and remembers their cart prices for the order summary. */
+export async function reserveLines(items: CreateReservationInput["items"]) {
+  const reservation = await createCheckoutReservation({ items });
+  saveCartPrices(reservation.id, items);
+  return reservation;
+}
+
 /**
  * Reserves the selected cart lines once and replaces the URL with `?reservation=<id>`. The lines
  * come from `app/` (features never import each other), as does `onOutOfStock`, which refreshes the
@@ -52,9 +59,8 @@ export function StartCheckout({
       quantity,
       expectedUnitPrice: unitPrice,
     }));
-    createCheckoutReservation({ items }).then(
+    reserveLines(items).then(
       (reservation) => {
-        saveCartPrices(reservation.id, items);
         router.replace(`/checkout?reservation=${reservation.id}`);
       },
       (failure: unknown) => {
