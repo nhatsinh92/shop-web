@@ -24,3 +24,6 @@ export type {
 } from "./api";
 export { shippingAddressSchema } from "./checkout.schema";
 export type { ShippingAddressValues } from "./checkout.schema";
+export { CheckoutView } from "./components/checkout-view";
+export { StartCheckout } from "./components/start-checkout";
+export type { StartLine } from "./components/start-checkout";
