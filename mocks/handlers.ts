@@ -1,5 +1,6 @@
 import { authHandlers } from "./auth-handlers";
 import { cartHandlers } from "./cart-handlers";
+import { checkoutHandlers } from "./checkout-handlers";
 import { cartSummaryFixture } from "./fixtures/cart";
 import { cartHttp } from "./http";
 import { productHandlers } from "./product-handlers";
@@ -12,5 +13,6 @@ export const handlers = [
   cartHttp.get("/api/cart/summary", ({ response }) => response(200).json(cartSummaryFixture)),
   ...authHandlers,
   ...cartHandlers,
+  ...checkoutHandlers,
   ...productHandlers,
 ];
