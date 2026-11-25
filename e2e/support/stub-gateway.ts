@@ -4,6 +4,7 @@ import { pathToFileURL } from "node:url";
 import type { IncomingMessage, ServerResponse } from "node:http";
 
 import type { handleCartRoute as HandleCartRoute } from "./stub-cart";
+import type { handleCheckoutRoute as HandleCheckoutRoute } from "./stub-checkout";
 import type { handleProductRoute as HandleProductRoute } from "./stub-products";
 import type { components as CoreComponents } from "../../src/lib/api/generated/core";
 
@@ -22,7 +23,10 @@ export type Scenario =
   | "cart-conflict"
   | "cart-full"
   | "cart-slow"
-  | "cart-merge-slow";
+  | "cart-merge-slow"
+  | "checkout-short-hold"
+  | "checkout-out-of-stock"
+  | "checkout-net-error";
 
 export function emailFor(scenario: Scenario, id: string): string {
   return `shopper+${scenario}.${id}@example.com`;
@@ -38,6 +42,9 @@ export function scenarioOf(email: string): Scenario {
     "cart-full",
     "cart-slow",
     "cart-merge-slow",
+    "checkout-short-hold",
+    "checkout-out-of-stock",
+    "checkout-net-error",
   ];
   return known.find((name) => name === tag) ?? "ok";
 }
@@ -208,6 +215,12 @@ function loadCartRoutes() {
   return cartRoutes;
 }
 
+let checkoutRoutes: Promise<{ handleCheckoutRoute: typeof HandleCheckoutRoute }> | undefined;
+function loadCheckoutRoutes() {
+  checkoutRoutes ??= import(pathToFileURL(resolve("e2e/support/stub-checkout.ts")).href);
+  return checkoutRoutes;
+}
+
 let productRoutes: Promise<{ handleProductRoute: typeof HandleProductRoute }> | undefined;
 function loadProductRoutes() {
   productRoutes ??= import(pathToFileURL(resolve("e2e/support/stub-products.ts")).href);
@@ -224,6 +237,13 @@ const server = createServer(async (req, res) => {
     serverSide: Boolean(req.headers.authorization),
   });
   if (handled) return;
+  const checkoutHandled = await (
+    await loadCheckoutRoutes()
+  ).handleCheckoutRoute(req, res, url, {
+    token: callerClaims(req),
+    scenario: email ? scenarioOf(email) : "ok",
+  });
+  if (checkoutHandled) return;
   const jar = cookies(req);
   const cartHandled = await (
     await loadCartRoutes()
