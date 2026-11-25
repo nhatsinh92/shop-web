@@ -29,17 +29,20 @@ build: node_modules ## Production build (fixture core unless CORE_INTERNAL_URL i
 	bash scripts/with-fixture-core.sh pnpm build
 	node scripts/check-static-shell.mjs
 
-demo: build ## Production build + next start on http://localhost:$(PORT) (/api/* -> gateway :8080)
+# The demo build shows the mock payment outcome control (NEXT_PUBLIC_* is inlined at build time).
+demo: node_modules ## Production build + next start on http://localhost:$(PORT) (/api/* -> gateway :8080)
+	NEXT_PUBLIC_MOCK_PAYMENT_CONTROLS=1 bash scripts/with-fixture-core.sh pnpm build
+	node scripts/check-static-shell.mjs
 	pnpm exec next start -p $(PORT)
 
 # rewrites() in next.config.ts is resolved at build time, so the e2e build must see GATEWAY_URL.
 e2e: node_modules ## Playwright smoke, auth journeys and axe against a build wired to a stub gateway
-	GATEWAY_URL=http://localhost:$(E2E_STUB_PORT) bash scripts/with-fixture-core.sh pnpm build
+	NEXT_PUBLIC_MOCK_PAYMENT_CONTROLS=1 GATEWAY_URL=http://localhost:$(E2E_STUB_PORT) bash scripts/with-fixture-core.sh pnpm build
 	node scripts/check-static-shell.mjs
 	E2E_STUB_PORT=$(E2E_STUB_PORT) pnpm e2e
 
 dev-mock: node_modules ## Dev server with MSW answering /api/* (no backend needed)
-	NEXT_PUBLIC_API_MOCKING=enabled pnpm exec next dev -p $(PORT)
+	NEXT_PUBLIC_MOCK_PAYMENT_CONTROLS=1 NEXT_PUBLIC_API_MOCKING=enabled pnpm exec next dev -p $(PORT)
 
 check-api: node_modules ## Regenerate API types and fail when src/lib/api/generated differs from the commit
 	pnpm gen:api

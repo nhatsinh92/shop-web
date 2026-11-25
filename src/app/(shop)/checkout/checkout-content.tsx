@@ -1,5 +1,6 @@
-import { CheckoutSection, CheckoutView } from "@/features/checkout";
+import { CheckoutSection } from "@/features/checkout";
 
+import { CheckoutFormHost } from "./checkout-form-host";
 import { CheckoutStart } from "./checkout-start";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -13,7 +14,7 @@ export async function CheckoutContent({ searchParams }: { searchParams: Checkout
   if (!id || !UUID.test(id)) return <CheckoutStart />;
   return (
     <CheckoutSection reservationId={id}>
-      <CheckoutView reservationId={id} />
+      <CheckoutFormHost reservationId={id} />
     </CheckoutSection>
   );
 }
