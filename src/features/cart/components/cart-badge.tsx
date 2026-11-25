@@ -4,15 +4,19 @@ import { useQuery } from "@tanstack/react-query";
 import { ShoppingCart } from "lucide-react";
 import Link from "next/link";
 
+import { useCartCountHint } from "@/lib/hints/cart-count";
+
 import { cartQueries } from "../queries";
 
 /**
  * Header cart link with the item-count badge. A client component, so the header stays part of
- * the static shell (artboard Main, tag CLIENT). Shows no badge while loading or on error.
+ * the static shell (artboard Main, tag CLIENT). Falls back to the `cart_count` hint while loading or on error; no badge without a hint.
  */
 export function CartBadge() {
   const { data } = useQuery(cartQueries.summary());
-  const count = data?.itemCount ?? 0;
+  const hint = useCartCountHint();
+  // The real count wins; the hint only covers a pending or failed query and is never cached.
+  const count = data?.itemCount ?? hint ?? 0;
   const shown = count > 99 ? "99+" : String(count);
   const label = count > 0 ? `Giỏ hàng, ${shown} sản phẩm` : "Giỏ hàng";
 
