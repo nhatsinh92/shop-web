@@ -7,7 +7,10 @@ import { formatVnd } from "@/lib/format";
 
 import { readCartPrices } from "../cart-prices";
 
-import type { Reservation } from "../api";
+import { OrderSuccess } from "./order-success";
+import { PlaceOrderButton } from "./place-order-button";
+
+import type { Order, Reservation } from "../api";
 
 const noopSubscribe = () => () => {};
 
@@ -29,9 +32,15 @@ function useCartPrices(reservationId: string) {
 export function OrderSummary({
   reservation,
   shippingFee,
+  placed,
+  placing,
 }: {
   reservation: Reservation;
   shippingFee: number;
+  /** The placed order: the card then shows the success state instead of the button. */
+  placed?: Order;
+  /** The "Đặt hàng" action; the card shows no button without it. */
+  placing?: { pending: boolean; disabled: boolean; error?: string; onPlace: () => void };
 }) {
   const cartPrices = useCartPrices(reservation.id);
   const changed = reservation.items.filter((item) => item.priceChanged).length;
@@ -96,6 +105,22 @@ export function OrderSummary({
           <dd className="tabular-nums">{formatVnd(reservation.subtotal.amount + shippingFee)}</dd>
         </div>
       </dl>
+      {placed ? (
+        <OrderSuccess order={placed} />
+      ) : placing ? (
+        <>
+          {placing.error ? (
+            <p role="alert" className="text-sm text-ink">
+              {placing.error}
+            </p>
+          ) : null}
+          <PlaceOrderButton
+            pending={placing.pending}
+            disabled={placing.disabled}
+            onClick={placing.onPlace}
+          />
+        </>
+      ) : null}
     </div>
   );
 }

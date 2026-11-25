@@ -1,13 +1,14 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { ApiError } from "@/lib/api";
 import { messageFor } from "@/lib/api/error-messages";
 
 import { checkoutQueries } from "../queries";
 import { AddressForm } from "./address-form";
+import { markOrderDone, resetOrderProgress } from "./checkout-progress";
 import { CheckoutSectionSkeleton, CheckoutSkeleton } from "./checkout-skeleton";
 import { CheckoutConsumed, CheckoutNotFound } from "./checkout-states";
 import { HoldBanner } from "./hold-banner";
@@ -16,6 +17,7 @@ import { OrderSummary } from "./order-summary";
 import { PaymentMethods } from "./payment-methods";
 import { ReservationExpired } from "./reservation-expired";
 import { ShippingOptions } from "./shipping-options";
+import { usePlaceOrder } from "../use-place-order";
 import { useCheckoutForm } from "./use-checkout-form";
 
 /**
@@ -28,12 +30,15 @@ export function CheckoutView({
   reservationId,
   displayName,
   shippingFee,
+  onOrderPlaced,
 }: {
   reservationId: string;
   /** Name of the signed-in user; prefills "Họ và tên" when it is still empty. */
   displayName?: string;
   /** Fee of the selected shipping option; defaults to the first option, the one preselected. */
   shippingFee?: number;
+  /** Called with the ordered SKUs once the order is placed; `app/` uses it to clean up the cart. */
+  onOrderPlaced?: (skus: string[]) => void;
 }) {
   // The `expiresAt` whose countdown reached 0; a new reservation has a new `expiresAt`.
   const [lapsedAt, setLapsedAt] = useState<string | null>(null);
@@ -51,10 +56,40 @@ export function CheckoutView({
     paymentMethods: payment.data?.items,
   });
 
+  const {
+    order: placed,
+    pending,
+    error: placeError,
+    place,
+  } = usePlaceOrder((order) => {
+    markOrderDone();
+    onOrderPlaced?.(order.items.map((item) => item.sku));
+  });
+  // The step bar lives outside this view; leaving the page puts it back to step 2.
+  useEffect(() => resetOrderProgress, []);
+
+  function placeOrder() {
+    const shippingOptionId = checkoutForm.shippingOptionId;
+    if (!shippingOptionId) return;
+    void checkoutForm.form.handleSubmit(({ note, ...shippingAddress }) =>
+      place(
+        {
+          reservationId,
+          shippingOptionId,
+          paymentMethod: checkoutForm.paymentMethodId,
+          shippingAddress,
+          ...(note ? { note } : {}),
+        },
+        checkoutForm.mockOutcome,
+      ),
+    )();
+  }
+
   if (reservation.error instanceof ApiError && reservation.error.status === 404) {
     return <CheckoutNotFound />;
   }
-  if (reservation.data?.status === "CONSUMED") return <CheckoutConsumed />;
+  // The order consumed the reservation: a refetch must not replace the success state.
+  if (reservation.data?.status === "CONSUMED" && !placed) return <CheckoutConsumed />;
   const expiredByError =
     reservation.error instanceof ApiError &&
     reservation.error.status === 410 &&
@@ -75,7 +110,8 @@ export function CheckoutView({
 
   const { status, expiresAt, items } = reservation.data;
   const released = status === "RELEASED";
-  const expired = released || status === "EXPIRED" || expiredByError || lapsedAt === expiresAt;
+  const expired =
+    !placed && (released || status === "EXPIRED" || expiredByError || lapsedAt === expiresAt);
   const fee = shippingFee ?? checkoutForm.shippingFee ?? 0;
 
   // One root for every state, so the form column keeps its state across "Giữ hàng lại".
@@ -83,7 +119,7 @@ export function CheckoutView({
     <div className="flex flex-col gap-5">
       {expired ? (
         <ReservationExpired reservationId={reservationId} items={items} released={released} />
-      ) : (
+      ) : placed ? null : (
         <HoldBanner expiresAt={expiresAt} onExpire={() => setLapsedAt(expiresAt)} />
       )}
       <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
@@ -137,7 +173,17 @@ export function CheckoutView({
           </section>
         </div>
         <aside aria-label="Đơn hàng" className="flex flex-col gap-4 lg:w-[360px]">
-          <OrderSummary reservation={reservation.data} shippingFee={fee} />
+          <OrderSummary
+            reservation={reservation.data}
+            shippingFee={fee}
+            placed={placed}
+            placing={{
+              pending,
+              disabled: !checkoutForm.shippingOptionId,
+              error: placeError,
+              onPlace: placeOrder,
+            }}
+          />
         </aside>
       </div>
     </div>
