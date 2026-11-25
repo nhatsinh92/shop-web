@@ -1,0 +1,15 @@
+# gitleaks configuration (protected path: changes need the owner's approval).
+# Every default rule stays on. The only exception is UUID-shaped values in test data
+# (ids and idempotency keys in tests, MSW mocks and e2e journeys), which the default
+# generic-api-key rule reports as secrets. A UUID anywhere else is still scanned, and
+# every other secret shape in test data is still reported.
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "UUIDs in test data are ids, not secrets"
+condition = "AND"
+regexTarget = "secret"
+regexes = ['''^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$''']
+paths = ['''\.test\.tsx?$''', '''(^|/)mocks/''', '''(^|/)e2e/''']
