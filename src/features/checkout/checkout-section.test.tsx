@@ -1,4 +1,4 @@
-import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 
@@ -75,25 +75,26 @@ describe("CheckoutSection", () => {
   });
 
   it("leaves a 401 to the client query", async () => {
-    const id = "00000000-0000-4000-8000-000000000002";
+    const id = await createReservation();
+    let reservationReads = 0;
     server.use(
-      http.get("*/api/checkout/reservations/:id", () =>
-        HttpResponse.json(
-          { code: "UNAUTHENTICATED", title: "Unauthorized", status: 401 },
-          { status: 401, headers: { "content-type": "application/problem+json" } },
-        ),
+      http.get("*/api/checkout/reservations/:id", () => {
+        reservationReads += 1;
+      }),
+      http.get(
+        "*/api/checkout/reservations/:id",
+        () =>
+          HttpResponse.json(
+            { code: "AUTH_UNAUTHENTICATED", title: "Unauthenticated", status: 401 },
+            { status: 401, headers: { "content-type": "application/problem+json" } },
+          ),
+        { once: true },
       ),
     );
-    const ui = await CheckoutSection({ reservationId: id, children: <Probe id={id} /> });
-    render(<QueryClientProvider client={new QueryClient()}>{ui}</QueryClientProvider>);
-    expect(screen.getByTestId("probe")).toHaveTextContent("client-query-ran");
+    await renderSection(id);
+    expect(reservationReads).toBe(1);
+    expect(screen.queryByText("Đơn hàng (1 sản phẩm)")).not.toBeInTheDocument();
+    expect(await screen.findByText("Đơn hàng (1 sản phẩm)")).toBeVisible();
+    expect(reservationReads).toBe(2);
   });
 });
-
-function Probe({ id }: { id: string }) {
-  const { fetchStatus } = useQuery({
-    queryKey: ["checkout", "reservation", id],
-    queryFn: () => Promise.resolve(null),
-  });
-  return <p data-testid="probe">{fetchStatus === "fetching" ? "client-query-ran" : "idle"}</p>;
-}
