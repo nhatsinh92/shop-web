@@ -4,9 +4,10 @@ SHELL := bash
 .SHELLFLAGS := -eu -o pipefail -c
 .DEFAULT_GOAL := help
 PORT ?= 3000
+K6_IMAGE ?= grafana/k6:1.8.3
 E2E_STUB_PORT ?= 4010
 
-.PHONY: help install test lint build demo e2e lighthouse dev-mock test-scripts check-api
+.PHONY: help install test lint build demo e2e lighthouse load-journeys dev-mock test-scripts check-api
 
 help: ## Show targets
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-10s %s\n", $$1, $$2}'
@@ -44,6 +45,19 @@ e2e: node_modules ## Playwright smoke, auth journeys and axe against a build wir
 # Mobile preset, 3 runs, median per url; budgets live in lighthouserc.json. Not part of PR CI.
 lighthouse: node_modules ## Lighthouse CI (mobile, median of 3) on Home, PDP and Cart against the stub gateway
 	bash scripts/lighthouse.sh
+
+# Needs shop-api's `make demo-peak` (gateway :8080, toxiproxy :8474, proxy cart-service-web :18083).
+load-journeys: node_modules ## k6 journeys (30 VUs, 2 min) against `make demo-peak`, with a toxic phase
+	NEXT_PUBLIC_MOCK_PAYMENT_CONTROLS=1 bash scripts/with-fixture-core.sh pnpm build
+	node scripts/check-static-shell.mjs
+	@pid=; \
+	trap 'if [[ -n $$pid ]]; then pkill -P $$pid 2>/dev/null || true; kill $$pid 2>/dev/null || true; fi' EXIT; \
+	CART_INTERNAL_URL=http://localhost:18083 pnpm exec next start -p $(PORT) & pid=$$!; \
+	up=; for _ in $$(seq 1 200); do curl -fsS -o /dev/null http://localhost:$(PORT)/ 2>/dev/null && { up=1; break; }; sleep 0.3; done; \
+	[[ -n $$up ]] || { echo "timed out waiting for shop-web on :$(PORT)" >&2; exit 1; }; \
+	docker run --rm --network host -v "$$PWD/perf/k6:/scripts:ro" \
+	  -e WEB_URL=$${WEB_URL:-http://localhost:$(PORT)} -e GATEWAY_URL -e TOXIPROXY_URL -e LOAD_PASSWORD \
+	  $(K6_IMAGE) run /scripts/journeys.js
 
 dev-mock: node_modules ## Dev server with MSW answering /api/* (no backend needed)
 	NEXT_PUBLIC_MOCK_PAYMENT_CONTROLS=1 NEXT_PUBLIC_API_MOCKING=enabled pnpm exec next dev -p $(PORT)
