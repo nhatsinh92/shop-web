@@ -25,18 +25,19 @@ Vietnamese, taken from the design files.
 
 ## Commands
 
-| Command             | What it does                                                                                                                   |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `make install`      | `pnpm install --frozen-lockfile`                                                                                               |
-| `make lint`         | ESLint (feature boundaries, TanStack Query, no raw hex), `next typegen` + `tsc`, Prettier check                                |
-| `make test`         | Vitest unit and component tests with MSW                                                                                       |
-| `make build`        | Production build (`next build`)                                                                                                |
-| `make demo`         | Production build + `next start` on :3000; `/api/*` is rewritten to the gateway on :8080                                        |
-| `make e2e`          | Playwright smoke + axe against the production build, desktop (1280) and phone (390)                                            |
-| `make lighthouse`   | Lighthouse CI (mobile, median of 3) on `/`, the first flash-sale PDP and `/cart`; budgets in `lighthouserc.json`; not in PR CI |
-| `make test-scripts` | Fixture tests for the picker scripts (needs jq)                                                                                |
-| `make dev-mock`     | Dev server with MSW answering `/api/*` (no backend needed)                                                                     |
-| `pnpm format`       | Prettier write (also sorts Tailwind classes)                                                                                   |
+| Command              | What it does                                                                                                                   |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `make install`       | `pnpm install --frozen-lockfile`                                                                                               |
+| `make lint`          | ESLint (feature boundaries, TanStack Query, no raw hex), `next typegen` + `tsc`, Prettier check                                |
+| `make test`          | Vitest unit and component tests with MSW                                                                                       |
+| `make build`         | Production build (`next build`)                                                                                                |
+| `make demo`          | Production build + `next start` on :3000; `/api/*` is rewritten to the gateway on :8080                                        |
+| `make e2e`           | Playwright smoke + axe against the production build, desktop (1280) and phone (390)                                            |
+| `make lighthouse`    | Lighthouse CI (mobile, median of 3) on `/`, the first flash-sale PDP and `/cart`; budgets in `lighthouserc.json`; not in PR CI |
+| `make load-journeys` | k6 journeys (30 VUs, 2 min, toxic phase) against shop-api's `make demo-peak`; needs Docker; not in PR CI                       |
+| `make test-scripts`  | Fixture tests for the picker scripts (needs jq)                                                                                |
+| `make dev-mock`      | Dev server with MSW answering `/api/*` (no backend needed)                                                                     |
+| `pnpm format`        | Prettier write (also sorts Tailwind classes)                                                                                   |
 
 Run `make lint test` before every push, and `make e2e` when you touch pages or layout.
 
