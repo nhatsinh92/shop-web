@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
 
-import { VIEWPORTS, reloadUntil, resetFlags, setFlags, trackErrors } from "./support/flags";
+import { VIEWPORTS, reloadUntil, resetFlags, setFlags, settle, trackErrors } from "./support/flags";
 import { ANC_PATH, expectNoAxeViolations, expectNoHorizontalScroll } from "./support/journeys";
 import { loginByApi, newEmail } from "./support/session";
 
@@ -68,7 +68,7 @@ for (const viewport of VIEWPORTS) {
         errors.length = 0;
         await page.reload();
         await expect(page.getByText("Sắp hết · còn khoảng 40 sản phẩm")).toBeVisible();
-        await page.waitForLoadState("networkidle");
+        await settle(page);
         expect(memberPriceCalls).toEqual([]);
         expect(errors).toEqual([]);
 

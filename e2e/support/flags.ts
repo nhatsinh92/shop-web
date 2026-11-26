@@ -28,6 +28,14 @@ export async function resetFlags(page: Page): Promise<void> {
 }
 
 /**
+ * The holes stream in after the shell, so judge a page only once it has settled. Image requests
+ * can keep the network busy for a while in the sandbox, hence the short, forgiving wait.
+ */
+export async function settle(page: Page): Promise<void> {
+  await page.waitForLoadState("networkidle", { timeout: 5000 }).catch(() => undefined);
+}
+
+/**
  * `getFlags` is cached for about 5 s per server instance, so a flip shows up after that. Reloads
  * until `visible()` reports the wanted state (default 15 s budget).
  */
@@ -36,6 +44,7 @@ export async function reloadUntil(page: Page, visible: () => Promise<boolean>, w
     .poll(
       async () => {
         await page.reload();
+        await settle(page);
         return visible();
       },
       { timeout: 15_000, intervals: [1000] },
@@ -43,12 +52,24 @@ export async function reloadUntil(page: Page, visible: () => Promise<boolean>, w
     .toBe(want);
 }
 
-/** Collects browser console errors and uncaught page errors for the test. */
+/**
+ * Collects what a shopper's console would show as a failure: uncaught page errors, console errors
+ * and failed `/api/*` calls. Plain "Failed to load resource" lines are left out: they come from
+ * image and prefetch requests that the sandbox cannot serve, whatever the flags say.
+ */
 export function trackErrors(page: Page): string[] {
   const errors: string[] = [];
   page.on("console", (message) => {
-    if (message.type() === "error") errors.push(message.text());
+    if (message.type() === "error" && !message.text().startsWith("Failed to load resource")) {
+      errors.push(message.text());
+    }
   });
   page.on("pageerror", (error) => errors.push(error.message));
+  page.on("response", (response) => {
+    const { pathname } = new URL(response.url());
+    if (pathname.startsWith("/api/") && response.status() >= 400) {
+      errors.push(`${response.status()} ${pathname}`);
+    }
+  });
   return errors;
 }
