@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { messageFor } from "@/lib/api";
 
 import { flushCartQuantity, removeCartItem, updateCartItem, type Cart } from "./api";
+import { recordCartCount } from "./cart-count-hint";
 import { cartKeys, setCartCaches } from "./queries";
 
 export const QUANTITY_DEBOUNCE_MS = 400;
@@ -96,6 +97,7 @@ export function useCartEdits() {
         .then((cart) => {
           const line = cart.items.find((l) => l.sku === sku);
           edit.confirmed = line?.quantity ?? target;
+          recordCartCount(cart.itemCount); // confirmed by the server, whatever the cache does next
           if (edit.seq !== seq) return; // a newer change for this SKU is pending
           if (othersBusy(edits, sku) && line) {
             writeCart(client, (c) => withQuantity(c, sku, line.quantity));
@@ -165,6 +167,7 @@ export function useCartEdits() {
       refresh();
       removeCartItem(sku)
         .then((next) => {
+          recordCartCount(next.itemCount);
           if (!othersBusy(edits, key)) setCartCaches(client, next);
         })
         .catch((error: unknown) => {

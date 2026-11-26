@@ -10,7 +10,8 @@ import { cartQueries } from "../queries";
 
 /**
  * Header cart link with the item-count badge. A client component, so the header stays part of
- * the static shell (artboard Main, tag CLIENT). Falls back to the `cart_count` hint while loading or on error; no badge without a hint.
+ * the static shell (artboard Main, tag CLIENT). Falls back to the `cart_count` hint while loading
+ * or on error; no badge without a hint.
  */
 export function CartBadge() {
   const { data } = useQuery(cartQueries.summary());

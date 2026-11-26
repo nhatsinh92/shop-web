@@ -36,9 +36,12 @@ export const cartQueries = {
     }),
 };
 
-/** One cache: a cart response from any write feeds both the full cart and the badge. */
+/**
+ * One cache: a cart from any write feeds both the full cart and the badge. It never writes the
+ * `cart_count` hint, because optimistic carts and rollbacks pass through here too; callers record
+ * the hint with `recordCartCount` only from a confirmed server response.
+ */
 export function setCartCaches(queryClient: QueryClient, cart: Cart): void {
   queryClient.setQueryData(cartKeys.mine(), cart);
   queryClient.setQueryData(cartKeys.summary(), { itemCount: cart.itemCount });
-  recordCartCount(cart.itemCount);
 }

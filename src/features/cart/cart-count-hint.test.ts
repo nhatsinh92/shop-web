@@ -5,16 +5,19 @@ import { buildCart, cartFixture } from "@mocks/fixtures/cart";
 import { server } from "@mocks/node";
 import { clearCartCount, readCartCount, writeCartCount } from "@/lib/hints/cart-count";
 
-import { removeCartItem, updateCartItem } from "./api";
 import { mergeGuestCart } from "./merge-guest-cart";
 import { cartKeys, cartQueries, setCartCaches } from "./queries";
-
-const SKU = cartFixture.items[0]!.sku;
 
 beforeEach(() => clearCartCount());
 afterAll(() => clearCartCount());
 
 describe("cart_count hint write point", () => {
+  it("setCartCaches never writes the hint (optimistic carts pass through it)", () => {
+    writeCartCount(6);
+    setCartCaches(new QueryClient(), { ...cartFixture, itemCount: 8 });
+    expect(readCartCount()).toBe(6);
+  });
+
   it("writes the itemCount of a successful summary read", async () => {
     server.use(http.get("*/api/cart/summary", () => HttpResponse.json({ itemCount: 5 })));
     await new QueryClient().fetchQuery(cartQueries.summary());
@@ -24,21 +27,6 @@ describe("cart_count hint write point", () => {
   it("writes the itemCount of a successful cart read", async () => {
     await new QueryClient().fetchQuery(cartQueries.mine());
     expect(readCartCount()).toBe(cartFixture.itemCount);
-  });
-
-  it("writes the new itemCount after a quantity change", async () => {
-    server.use(
-      http.patch("*/api/cart/items/:sku", () => HttpResponse.json(buildCart(cartFixture.items))),
-    );
-    const cart = await updateCartItem(SKU, 2);
-    setCartCaches(new QueryClient(), { ...cart, itemCount: 8 });
-    expect(readCartCount()).toBe(8);
-  });
-
-  it("writes the new itemCount after a remove", async () => {
-    server.use(http.delete("*/api/cart/items/:sku", () => HttpResponse.json(buildCart([]))));
-    setCartCaches(new QueryClient(), await removeCartItem(SKU));
-    expect(readCartCount()).toBe(0);
   });
 
   it("writes the new itemCount after an add (the refetch that follows it)", async () => {
