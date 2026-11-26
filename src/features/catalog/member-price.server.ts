@@ -27,11 +27,11 @@ export type MemberPriceResult =
  * `<Suspense>` boundary because it reads the request cookies. Never throws.
  */
 export async function getMemberPriceForRequest(slug: string): Promise<MemberPriceResult> {
-  const startedAt = Date.now();
+  const startedAt = performance.now();
   // Flags first (usually a 5 s cache hit): with the flag off, no cookie is read and no endpoint
   // is called, neither here nor from the browser (`MemberPrice` renders nothing for "none").
   if (!(await getFlags()).memberPrice) return { kind: "none" };
-  const budgetMs = Math.max(1, MEMBER_PRICE_BUDGET_MS - (Date.now() - startedAt));
+  const budgetMs = Math.max(1, MEMBER_PRICE_BUDGET_MS - (performance.now() - startedAt));
   const jar = await cookies();
   const accessToken = jar.get(ACCESS_COOKIE)?.value;
   if (!accessToken) {

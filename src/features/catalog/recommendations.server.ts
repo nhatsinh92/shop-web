@@ -18,10 +18,10 @@ const ACCESS_COOKIE = "access_token";
  * (flags read included) stays within {@link RECOMMENDATIONS_BUDGET_MS}. Must run inside a `<Suspense>` boundary because it reads the request cookies.
  */
 export async function listRecommendations(): Promise<ProductSummary[]> {
-  const startedAt = Date.now();
+  const startedAt = performance.now();
   // Flags first (usually a 5 s cache hit): with the flag off the endpoint is never called.
   if (!(await getFlags()).recommendations) return [];
-  const budgetMs = Math.max(1, RECOMMENDATIONS_BUDGET_MS - (Date.now() - startedAt));
+  const budgetMs = Math.max(1, RECOMMENDATIONS_BUDGET_MS - (performance.now() - startedAt));
   const accessToken = (await cookies()).get(ACCESS_COOKIE)?.value;
   const { data } = await serverApi("core", {
     budgetMs,
