@@ -5,6 +5,7 @@ import { cookies } from "next/headers";
 import { serverApi } from "@/lib/api/server";
 import { ApiError } from "@/lib/api";
 import { ApiTimeoutError } from "@/lib/api/server";
+import { getFlags } from "@/lib/flags";
 import { ACCESS_COOKIE, SESSION_HINT_COOKIE } from "@/lib/auth/cookies";
 
 import type { MemberPrice } from "./api";
@@ -26,6 +27,11 @@ export type MemberPriceResult =
  * `<Suspense>` boundary because it reads the request cookies. Never throws.
  */
 export async function getMemberPriceForRequest(slug: string): Promise<MemberPriceResult> {
+  const startedAt = Date.now();
+  // Flags first (usually a 5 s cache hit): with the flag off, no cookie is read and no endpoint
+  // is called, neither here nor from the browser (`MemberPrice` renders nothing for "none").
+  if (!(await getFlags()).memberPrice) return { kind: "none" };
+  const budgetMs = Math.max(1, MEMBER_PRICE_BUDGET_MS - (Date.now() - startedAt));
   const jar = await cookies();
   const accessToken = jar.get(ACCESS_COOKIE)?.value;
   if (!accessToken) {
@@ -33,7 +39,7 @@ export async function getMemberPriceForRequest(slug: string): Promise<MemberPric
   }
   try {
     const { data } = await serverApi("core", {
-      budgetMs: MEMBER_PRICE_BUDGET_MS,
+      budgetMs,
       headers: { authorization: `Bearer ${accessToken}` },
     }).GET("/api/products/{slug}/member-price", { params: { path: { slug } } });
     return data ? { kind: "price", price: data } : { kind: "none" };
