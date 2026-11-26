@@ -184,13 +184,25 @@ export function journey(data) {
   );
   check(added, { "added to cart": (r) => r.status >= 200 && r.status < 300 });
 
-  // The header badge read: during the toxic phase the gateway answers 503 SERVICE_UNAVAILABLE.
-  http.get(`${WEB_URL}/api/cart/summary`, {
+  // The header badge read: 503 SERVICE_UNAVAILABLE is expected only during the toxic phase.
+  // Outside it the default callback (2xx only) applies, so a 503 counts as a failure.
+  const summary = http.get(`${WEB_URL}/api/cart/summary`, {
     jar,
     headers: read,
-    tags: tag("cart-summary", true),
-    responseCallback: http.expectedStatuses({ min: 200, max: 299 }, 503),
+    tags: tag("cart-summary", toxic),
+    ...(toxic && { responseCallback: http.expectedStatuses({ min: 200, max: 299 }, 503) }),
   });
+  if (toxic && summary.status === 503) {
+    check(summary, {
+      "toxic 503 is SERVICE_UNAVAILABLE": (r) => {
+        try {
+          return r.json("code") === "SERVICE_UNAVAILABLE";
+        } catch {
+          return false;
+        }
+      },
+    });
+  }
 
   const page = http.get(`${WEB_URL}/cart`, { jar, headers: read, tags: tag("cart") });
   cartPageOk.add(page.status === 200);
