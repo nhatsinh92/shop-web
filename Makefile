@@ -59,3 +59,4 @@ test-scripts: ## Tests for the orchestration scripts (needs jq)
 	bash scripts/tests/heartbeat.test.sh
 	node --test scripts/tests/fixture-core.test.ts
 	bash scripts/tests/with-fixture-core.test.sh
+	bash scripts/tests/lighthouse-report-issue.test.sh
