@@ -5,6 +5,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 
 import type { handleCartRoute as HandleCartRoute } from "./stub-cart";
 import type { handleCheckoutRoute as HandleCheckoutRoute } from "./stub-checkout";
+import { handleFlagsRoute } from "./stub-flags";
 import type { handleProductRoute as HandleProductRoute } from "./stub-products";
 import type { components as CoreComponents } from "../../src/lib/api/generated/core";
 
@@ -230,6 +231,7 @@ function loadProductRoutes() {
 const server = createServer(async (req, res) => {
   const url = new URL(req.url ?? "/", `http://localhost:${port}`);
   const email = callerEmail(req);
+  if (handleFlagsRoute(req, res, url)) return;
   const handled = await (
     await loadProductRoutes()
   ).handleProductRoute(req, res, url, {

@@ -30,8 +30,11 @@ export const TOKEN_MIN_LEFT_SECONDS = 60;
 const MAX_QUANTITY = 10;
 const GUEST_TTL_SECONDS = 7 * 24 * 60 * 60;
 
-/** Runtime failure modes, switched per user through `POST /__stub/cart-mode`. */
-export type CartMode = "ok" | "down" | "patch-fails";
+/**
+ * Runtime failure modes, switched per user through `POST /__stub/cart-mode`: `down` fails every
+ * cart call, `summary-down` answers 503 on `GET /api/cart/summary` only (the badge call).
+ */
+export type CartMode = "ok" | "down" | "patch-fails" | "summary-down";
 
 export interface CartContext {
   /** Claims of the access token (Bearer from the server, else the cookie); null when absent. */
@@ -217,6 +220,10 @@ export async function handleCartRoute(
   const mode = owner.kind === "user" ? (modes.get(owner.email) ?? "ok") : "ok";
   if (mode === "down") {
     problem(res, 503, "SERVICE_UNAVAILABLE", "Cart unavailable");
+    return true;
+  }
+  if (mode === "summary-down" && route === "GET summary") {
+    problem(res, 503, "SERVICE_UNAVAILABLE", "Cart summary unavailable");
     return true;
   }
   const cart = cartOf(owner, ctx.scenario);
