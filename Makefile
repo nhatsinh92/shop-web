@@ -6,7 +6,7 @@ SHELL := bash
 PORT ?= 3000
 E2E_STUB_PORT ?= 4010
 
-.PHONY: help install test lint build demo e2e dev-mock test-scripts check-api
+.PHONY: help install test lint build demo e2e lighthouse dev-mock test-scripts check-api
 
 help: ## Show targets
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-10s %s\n", $$1, $$2}'
@@ -40,6 +40,10 @@ e2e: node_modules ## Playwright smoke, auth journeys and axe against a build wir
 	NEXT_PUBLIC_MOCK_PAYMENT_CONTROLS=1 GATEWAY_URL=http://localhost:$(E2E_STUB_PORT) bash scripts/with-fixture-core.sh pnpm build
 	node scripts/check-static-shell.mjs
 	E2E_STUB_PORT=$(E2E_STUB_PORT) pnpm e2e
+
+# Mobile preset, 3 runs, median per url; budgets live in lighthouserc.json. Not part of PR CI.
+lighthouse: node_modules ## Lighthouse CI (mobile, median of 3) on Home, PDP and Cart against the stub gateway
+	bash scripts/lighthouse.sh
 
 dev-mock: node_modules ## Dev server with MSW answering /api/* (no backend needed)
 	NEXT_PUBLIC_MOCK_PAYMENT_CONTROLS=1 NEXT_PUBLIC_API_MOCKING=enabled pnpm exec next dev -p $(PORT)
