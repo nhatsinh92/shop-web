@@ -2,6 +2,7 @@ import { authHandlers } from "./auth-handlers";
 import { cartHandlers } from "./cart-handlers";
 import { checkoutHandlers } from "./checkout-handlers";
 import { cartSummaryFixture } from "./fixtures/cart";
+import { flagsHandlers } from "./flags-handlers";
 import { cartHttp } from "./http";
 import { productHandlers } from "./product-handlers";
 
@@ -14,5 +15,6 @@ export const handlers = [
   ...authHandlers,
   ...cartHandlers,
   ...checkoutHandlers,
+  ...flagsHandlers,
   ...productHandlers,
 ];
