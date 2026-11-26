@@ -6,6 +6,8 @@ const baseURL = process.env.E2E_BASE_URL ?? `http://localhost:${port}`;
 const stubPort = Number(process.env.E2E_STUB_PORT ?? 4010);
 const stubUrl = `http://localhost:${stubPort}`;
 
+const SERIAL_SPECS = ["**/flags.spec.ts", "**/cart-hint.spec.ts"];
+
 // End-to-end tests run against a production build (`next start`), so prerendering, streaming
 // and caching behave as in production. Screenshots are taken at desktop and phone width.
 export default defineConfig({
@@ -19,8 +21,21 @@ export default defineConfig({
     {
       name: "desktop",
       use: { ...devices["Desktop Chrome"], viewport: { width: 1280, height: 900 } },
+      testIgnore: SERIAL_SPECS,
     },
-    { name: "phone", use: { ...devices["Desktop Chrome"], viewport: { width: 390, height: 844 } } },
+    {
+      name: "phone",
+      use: { ...devices["Desktop Chrome"], viewport: { width: 390, height: 844 } },
+      testIgnore: SERIAL_SPECS,
+    },
+    // Flag journeys flip global stub state, so they run alone, after every other test.
+    {
+      name: "flags",
+      use: { ...devices["Desktop Chrome"] },
+      testMatch: SERIAL_SPECS,
+      workers: 1,
+      dependencies: ["desktop", "phone"],
+    },
   ],
   webServer: process.env.E2E_BASE_URL
     ? undefined

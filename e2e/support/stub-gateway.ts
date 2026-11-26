@@ -5,6 +5,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 
 import type { handleCartRoute as HandleCartRoute } from "./stub-cart";
 import type { handleCheckoutRoute as HandleCheckoutRoute } from "./stub-checkout";
+import type { handleFlagsRoute as HandleFlagsRoute } from "./stub-flags";
 import type { handleProductRoute as HandleProductRoute } from "./stub-products";
 import type { components as CoreComponents } from "../../src/lib/api/generated/core";
 
@@ -221,6 +222,12 @@ function loadCheckoutRoutes() {
   return checkoutRoutes;
 }
 
+let flagsRoutes: Promise<{ handleFlagsRoute: typeof HandleFlagsRoute }> | undefined;
+function loadFlagsRoutes() {
+  flagsRoutes ??= import(pathToFileURL(resolve("e2e/support/stub-flags.ts")).href);
+  return flagsRoutes;
+}
+
 let productRoutes: Promise<{ handleProductRoute: typeof HandleProductRoute }> | undefined;
 function loadProductRoutes() {
   productRoutes ??= import(pathToFileURL(resolve("e2e/support/stub-products.ts")).href);
@@ -230,6 +237,7 @@ function loadProductRoutes() {
 const server = createServer(async (req, res) => {
   const url = new URL(req.url ?? "/", `http://localhost:${port}`);
   const email = callerEmail(req);
+  if ((await loadFlagsRoutes()).handleFlagsRoute(req, res, url)) return;
   const handled = await (
     await loadProductRoutes()
   ).handleProductRoute(req, res, url, {
