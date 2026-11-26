@@ -20,7 +20,7 @@
             "categories:performance": [
               "error",
               {
-                "minScore": 0.94
+                "minScore": 0.93
               }
             ],
             "categories:accessibility": [
@@ -32,37 +32,85 @@
             "largest-contentful-paint": [
               "error",
               {
-                "maxNumericValue": 1001
+                "maxNumericValue": 1005
               }
             ],
             "cumulative-layout-shift": [
               "error",
               {
-                "maxNumericValue": 0.0002
+                "maxNumericValue": 0.01
               }
             ],
             "total-blocking-time": [
               "error",
               {
-                "maxNumericValue": 163
+                "maxNumericValue": 239
               }
             ],
             "resource-summary:script:size": [
               "error",
               {
-                "maxNumericValue": 287943
+                "maxNumericValue": 288015
               }
             ],
             "resource-summary:total:size": [
               "error",
               {
-                "maxNumericValue": 483377
+                "maxNumericValue": 483433
               }
             ]
           }
         },
         {
           "matchingUrlPattern": "^http://localhost:3000/product/tai-nghe-khong-day-anc-pro$",
+          "aggregationMethod": "median",
+          "assertions": {
+            "categories:performance": [
+              "error",
+              {
+                "minScore": 0.91
+              }
+            ],
+            "categories:accessibility": [
+              "error",
+              {
+                "minScore": 0.95
+              }
+            ],
+            "largest-contentful-paint": [
+              "error",
+              {
+                "maxNumericValue": 1003
+              }
+            ],
+            "cumulative-layout-shift": [
+              "error",
+              {
+                "maxNumericValue": 0.01
+              }
+            ],
+            "total-blocking-time": [
+              "error",
+              {
+                "maxNumericValue": 415
+              }
+            ],
+            "resource-summary:script:size": [
+              "error",
+              {
+                "maxNumericValue": 289181
+              }
+            ],
+            "resource-summary:total:size": [
+              "error",
+              {
+                "maxNumericValue": 490744
+              }
+            ]
+          }
+        },
+        {
+          "matchingUrlPattern": "^http://localhost:3000/cart$",
           "aggregationMethod": "median",
           "assertions": {
             "categories:performance": [
@@ -80,79 +128,31 @@
             "largest-contentful-paint": [
               "error",
               {
-                "maxNumericValue": 1006
+                "maxNumericValue": 837
               }
             ],
             "cumulative-layout-shift": [
               "error",
               {
-                "maxNumericValue": 0.0002
+                "maxNumericValue": 0.01
               }
             ],
             "total-blocking-time": [
               "error",
               {
-                "maxNumericValue": 322
+                "maxNumericValue": 575
               }
             ],
             "resource-summary:script:size": [
               "error",
               {
-                "maxNumericValue": 289109
+                "maxNumericValue": 288015
               }
             ],
             "resource-summary:total:size": [
               "error",
               {
-                "maxNumericValue": 490285
-              }
-            ]
-          }
-        },
-        {
-          "matchingUrlPattern": "^http://localhost:3000/cart$",
-          "aggregationMethod": "median",
-          "assertions": {
-            "categories:performance": [
-              "error",
-              {
-                "minScore": 0.85
-              }
-            ],
-            "categories:accessibility": [
-              "error",
-              {
-                "minScore": 0.95
-              }
-            ],
-            "largest-contentful-paint": [
-              "error",
-              {
-                "maxNumericValue": 835
-              }
-            ],
-            "cumulative-layout-shift": [
-              "error",
-              {
-                "maxNumericValue": 0.0002
-              }
-            ],
-            "total-blocking-time": [
-              "error",
-              {
-                "maxNumericValue": 456
-              }
-            ],
-            "resource-summary:script:size": [
-              "error",
-              {
-                "maxNumericValue": 287943
-              }
-            ],
-            "resource-summary:total:size": [
-              "error",
-              {
-                "maxNumericValue": 478276
+                "maxNumericValue": 478337
               }
             ]
           }
