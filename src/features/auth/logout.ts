@@ -5,6 +5,7 @@ import type { QueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 
 import { api, unwrap } from "@/lib/api";
+import { clearCartCount } from "@/lib/hints/cart-count";
 import { clearPersistedCache } from "@/lib/query/persister";
 
 import { notifySessionHintChanged } from "./session-hint";
@@ -18,6 +19,7 @@ const HINT_COOKIE = "logged_in";
 export async function clearUserData(queryClient: QueryClient): Promise<void> {
   queryClient.clear();
   document.cookie = `${HINT_COOKIE}=; Max-Age=0; path=/`;
+  clearCartCount();
   notifySessionHintChanged();
   try {
     await clearPersistedCache();
