@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 import { setCartMode } from "./support/cart";
-import { VIEWPORTS } from "./support/flags";
+import { VIEWPORTS, settle } from "./support/flags";
 import { ANC_PATH, expectNoAxeViolations, expectNoHorizontalScroll } from "./support/journeys";
 import { loginByApi, newEmail } from "./support/session";
 
@@ -34,6 +34,9 @@ for (const viewport of VIEWPORTS) {
       expect((await summary).status()).toBe(503);
       await expect(badge).toHaveText("2");
 
+      // Axe judges the settled page, not the loading fallback of the member-price hole.
+      await expect(page.getByLabel("Đang tải giá")).toHaveCount(0);
+      await settle(page);
       await expectNoAxeViolations(page);
       if (viewport.name === "phone") await expectNoHorizontalScroll(page);
 
