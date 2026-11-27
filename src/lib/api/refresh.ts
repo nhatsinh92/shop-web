@@ -7,6 +7,21 @@ type SessionExpiredListener = () => void;
 
 const listeners = new Set<SessionExpiredListener>();
 let inFlight: Promise<boolean> | null = null;
+/** When the last successful refresh settled (monotonic clock); -Infinity before the first one. */
+let lastRefreshedAt = Number.NEGATIVE_INFINITY;
+
+/** A monotonic timestamp to take just before a request is sent. */
+export function requestClock(): number {
+  return performance.now();
+}
+
+/**
+ * True when a refresh succeeded after `sentAt`: a request sent then still carried the old cookies,
+ * so its 401 is answered by retrying with the new ones, not by refreshing again (#159).
+ */
+export function refreshedSince(sentAt: number): boolean {
+  return lastRefreshedAt > sentAt;
+}
 
 /** Registers a listener called once per failed refresh. Returns an unsubscribe function. */
 export function onSessionExpired(listener: SessionExpiredListener): () => void {
@@ -40,7 +55,8 @@ async function callRefresh(origin: string): Promise<boolean> {
 export function refreshSession(origin: string): Promise<boolean> {
   inFlight ??= callRefresh(origin)
     .then((ok) => {
-      if (!ok) for (const listener of [...listeners]) listener();
+      if (ok) lastRefreshedAt = requestClock();
+      else for (const listener of [...listeners]) listener();
       return ok;
     })
     .finally(() => {
