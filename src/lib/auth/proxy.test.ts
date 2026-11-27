@@ -35,7 +35,15 @@ afterEach(() => {
 
 describe("proxy config", () => {
   it("matches exactly /cart, /account/:path* and /checkout", () => {
-    expect(config.matcher).toEqual(["/cart", "/account/:path*", "/checkout"]);
+    const notPrefetch = [
+      { type: "header", key: "next-router-prefetch" },
+      { type: "header", key: "purpose", value: "prefetch" },
+    ];
+    expect(config.matcher).toEqual([
+      { source: "/cart", missing: notPrefetch },
+      { source: "/account/:path*", missing: notPrefetch },
+      { source: "/checkout", missing: notPrefetch },
+    ]);
   });
 });
 

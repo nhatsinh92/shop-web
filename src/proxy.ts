@@ -42,6 +42,33 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
   return response;
 }
 
+// Router prefetches are skipped (#132): a prefetch of /cart (for example from the header) carries
+// the same old cookies as the browser's own refresh and rotated the session a second time at once.
+// Next hides `next-router-prefetch` from `request.headers` in Proxy, so only the matcher can see it.
+// The real navigation still runs the proxy and refreshes before render. The matcher must stay a
+// literal: Next reads it statically at build time.
 export const config = {
-  matcher: ["/cart", "/account/:path*", "/checkout"],
+  matcher: [
+    {
+      source: "/cart",
+      missing: [
+        { type: "header", key: "next-router-prefetch" },
+        { type: "header", key: "purpose", value: "prefetch" },
+      ],
+    },
+    {
+      source: "/account/:path*",
+      missing: [
+        { type: "header", key: "next-router-prefetch" },
+        { type: "header", key: "purpose", value: "prefetch" },
+      ],
+    },
+    {
+      source: "/checkout",
+      missing: [
+        { type: "header", key: "next-router-prefetch" },
+        { type: "header", key: "purpose", value: "prefetch" },
+      ],
+    },
+  ],
 };
