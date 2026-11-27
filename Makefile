@@ -7,7 +7,7 @@ PORT ?= 3000
 K6_IMAGE ?= grafana/k6:1.8.3
 E2E_STUB_PORT ?= 4010
 
-.PHONY: help install test lint build demo e2e lighthouse load-journeys dev-mock test-scripts check-api
+.PHONY: help install test lint build demo e2e e2e-gateway lighthouse load-journeys dev-mock test-scripts check-api
 
 help: ## Show targets
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-10s %s\n", $$1, $$2}'
@@ -41,6 +41,22 @@ e2e: node_modules ## Playwright smoke, auth journeys and axe against a build wir
 	NEXT_PUBLIC_MOCK_PAYMENT_CONTROLS=1 GATEWAY_URL=http://localhost:$(E2E_STUB_PORT) bash scripts/with-fixture-core.sh pnpm build
 	node scripts/check-static-shell.mjs
 	E2E_STUB_PORT=$(E2E_STUB_PORT) pnpm e2e
+
+# Cart journeys against the real shop-api gateway (#103); needs `make demo` running in shop-api.
+# The build reads the real core (CORE_INTERNAL_URL) and rewrites /api/* to the gateway on :8080;
+# shop-web serves on :3000, the gateway's WEB_ORIGIN. Not part of PR CI.
+GATEWAY_HEALTH_URL ?= http://localhost:8080/actuator/health
+e2e-gateway: node_modules ## Cart journeys (desktop, phone, axe) through the real gateway of shop-api's `make demo`
+	@curl -fsS --max-time 10 $(GATEWAY_HEALTH_URL) 2>/dev/null | grep -q '"status":"UP"' \
+	  || { echo "The shop-api gateway is not UP at $(GATEWAY_HEALTH_URL): run 'make demo' in shop-api first." >&2; exit 1; }
+	GATEWAY_URL=http://localhost:8080 CORE_INTERNAL_URL=http://localhost:8081 pnpm build
+	node scripts/check-static-shell.mjs
+	@pid=; \
+	trap 'if [[ -n $$pid ]]; then pkill -P $$pid 2>/dev/null || true; kill $$pid 2>/dev/null || true; fi' EXIT; \
+	pnpm exec next start -p 3000 & pid=$$!; \
+	up=; for _ in $$(seq 1 200); do curl -fsS -o /dev/null http://localhost:3000/ 2>/dev/null && { up=1; break; }; sleep 0.3; done; \
+	[[ -n $$up ]] || { echo "timed out waiting for shop-web on :3000" >&2; exit 1; }; \
+	pnpm exec playwright test --config playwright.gateway.config.ts
 
 # Mobile preset, 3 runs, median per url; budgets live in lighthouserc.json. Not part of PR CI.
 lighthouse: node_modules ## Lighthouse CI (mobile, median of 3) on Home, PDP and Cart against the stub gateway
