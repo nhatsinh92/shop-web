@@ -3,7 +3,7 @@ import createClient from "openapi-fetch";
 import { ApiError, apiErrorFromResponse, networkError } from "./api-error";
 import type { paths as CartPaths } from "./generated/cart";
 import type { paths as CorePaths } from "./generated/core";
-import { canRefreshFor, refreshSession } from "./refresh";
+import { canRefreshFor, refreshSession, refreshedSince, requestClock } from "./refresh";
 
 function isAbort(error: unknown): boolean {
   return error instanceof Error && error.name === "AbortError";
@@ -20,15 +20,18 @@ async function send(request: Request): Promise<Response> {
 
 /**
  * fetch that throws ApiError for network failures and non-2xx responses (aborts pass through).
- * A 401 triggers one shared session refresh, then a single retry of the request.
+ * A 401 triggers one shared session refresh, then a single retry of the request. If a refresh
+ * already succeeded after this request was sent, the request only carried the old cookies, so it
+ * is retried without refreshing again (#159).
  */
 async function apiTransport(request: Request): Promise<Response> {
   const retryable = canRefreshFor(request.url) ? request.clone() : null;
+  const sentAt = requestClock();
   const res = await send(request);
   if (res.ok) return res;
   if (res.status !== 401 || !retryable) throw await apiErrorFromResponse(res);
 
-  const refreshed = await refreshSession(new URL(request.url).origin);
+  const refreshed = refreshedSince(sentAt) || (await refreshSession(new URL(request.url).origin));
   if (!refreshed) throw await apiErrorFromResponse(res);
   retryable.signal.throwIfAborted();
 
